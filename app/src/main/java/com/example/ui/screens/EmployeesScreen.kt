@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Employee
+import com.example.data.model.AssetStatus
 import com.example.ui.components.StatusBadge
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.AppScreen
@@ -34,25 +36,36 @@ fun EmployeesScreen(viewModel: InventoryViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(BackgroundDark)
     ) {
         // App Bar
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .background(SurfaceDark)
+                .padding(horizontal = 8.dp, vertical = 10.dp)
         ) {
-            IconButton(onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
+            IconButton(
+                onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) },
+                modifier = Modifier.size(44.dp)
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Geri", tint = TextPrimary)
             }
-            Text(
-                text = "Personel & Zimmet Dağılımı",
-                fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
-                color = NavyDark
-            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Column {
+                Text(
+                    text = "Personel ve Zimmetler",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "${employees.size} kayıtlı personel",
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+            }
         }
 
         LazyColumn(
@@ -66,8 +79,8 @@ fun EmployeesScreen(viewModel: InventoryViewModel) {
 
                 Card(
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
+                    colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
@@ -85,14 +98,15 @@ fun EmployeesScreen(viewModel: InventoryViewModel) {
                                     modifier = Modifier
                                         .size(42.dp)
                                         .clip(CircleShape)
-                                        .background(TurquoiseDark.copy(alpha = 0.15f)),
+                                        .background(CardSurfaceElevated)
+                                        .border(1.dp, BorderLight, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = "${emp.name.firstOrNull() ?: 'P'}${emp.surname.firstOrNull() ?: 'E'}",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
-                                        color = TurquoiseDark
+                                        color = AccentTeal
                                     )
                                 }
 
@@ -102,23 +116,24 @@ fun EmployeesScreen(viewModel: InventoryViewModel) {
                                     Text(
                                         text = emp.fullName,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp
+                                        fontSize = 15.sp,
+                                        color = TextPrimary
                                     )
                                     Text(
-                                        text = "${emp.title} • ${emp.department}",
+                                        text = "${emp.department} • ${emp.title}",
                                         fontSize = 12.sp,
-                                        color = TextSecondaryLight
+                                        color = TextSecondary
                                     )
                                 }
                             }
 
                             Surface(
-                                color = if (assignedAssets.isNotEmpty()) StatusAssigned.copy(alpha = 0.15f) else NeutralCardBorder.copy(alpha = 0.5f),
+                                color = if (assignedAssets.isNotEmpty()) StatusAssigned.copy(alpha = 0.2f) else CardSurfaceElevated,
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
-                                    text = "${assignedAssets.size} Demirbaş",
-                                    color = if (assignedAssets.isNotEmpty()) StatusAssigned else TextSecondaryLight,
+                                    text = "${assignedAssets.size} Zimmet",
+                                    color = if (assignedAssets.isNotEmpty()) StatusAssigned else TextSecondary,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -126,75 +141,56 @@ fun EmployeesScreen(viewModel: InventoryViewModel) {
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = emp.email,
-                                fontSize = 11.sp,
-                                color = TextSecondaryLight
-                            )
-                            Text(
-                                text = emp.phone,
-                                fontSize = 11.sp,
-                                color = TextSecondaryLight
-                            )
-                        }
-
-                        // Expanded view: list of assets assigned to this employee
+                        // Collapsible Assigned Asset List
                         if (isExpanded) {
                             Spacer(modifier = Modifier.height(12.dp))
-                            HorizontalDivider(color = NeutralCardBorder)
-                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider(color = BorderDark)
+                            Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
-                                text = "Zimmetindeki Demirbaşlar:",
-                                fontWeight = FontWeight.Bold,
+                                text = "Personele Zimmetli Demirbaşlar:",
                                 fontSize = 12.sp,
-                                color = NavyDark
+                                fontWeight = FontWeight.SemiBold,
+                                color = TextPrimary
                             )
+                            Spacer(modifier = Modifier.height(6.dp))
 
                             if (assignedAssets.isEmpty()) {
                                 Text(
-                                    text = "Bu personele atanmış aktif demirbaş bulunmuyor.",
-                                    fontSize = 11.sp,
-                                    color = TextSecondaryLight,
+                                    text = "Bu personele atanmış aktif bir demirbaş bulunmuyor.",
+                                    fontSize = 12.sp,
+                                    color = TextMuted,
                                     modifier = Modifier.padding(vertical = 4.dp)
                                 )
                             } else {
-                                assignedAssets.forEach { a ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(NeutralBgLight)
-                                            .clickable { viewModel.navigateTo(AppScreen.ASSET_DETAIL, a.assetCode) }
-                                            .padding(8.dp)
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(a.assetCode, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = TurquoiseDark)
-                                            Text(a.assetName, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    assignedAssets.forEach { a ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(SurfaceDark)
+                                                .clickable { viewModel.navigateTo(AppScreen.ASSET_DETAIL, a.assetCode) }
+                                                .padding(horizontal = 10.dp, vertical = 8.dp)
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(Icons.Default.Inventory2, contentDescription = null, tint = AccentTeal, modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Column {
+                                                    Text(a.assetName, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                                                    Text(a.assetCode, style = SmallCodeTextStyle)
+                                                }
+                                            }
+                                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
                                         }
-                                        Text(a.room, fontSize = 10.sp, color = TextSecondaryLight)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMutedLight, modifier = Modifier.size(16.dp))
                                     }
-                                    Spacer(modifier = Modifier.height(4.dp))
                                 }
                             }
                         }
                     }
                 }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(48.dp))
             }
         }
     }

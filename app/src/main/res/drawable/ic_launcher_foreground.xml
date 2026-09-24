@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/akyol_launcher_icon_1790280188068"
+        android:drawable="@drawable/akyol_launcher_icon_1790285183913"
         android:gravity="center" />
 </layer-list>

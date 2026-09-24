@@ -1,7 +1,9 @@
 package com.example.ui.screens
 
+import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -21,36 +23,49 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Asset
 import com.example.data.model.AssetStatus
+import com.example.ui.components.StatusBadge
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.AppScreen
 import com.example.ui.viewmodel.InventoryViewModel
 import com.example.util.ExportUtil
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+
+private const val TAG = "ReportsScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsScreen(viewModel: InventoryViewModel) {
     val context = LocalContext.current
     val assets by viewModel.allAssets.collectAsState()
-    val assignments by viewModel.allAssignments.collectAsState()
-    val maintenance by viewModel.allMaintenance.collectAsState()
-    val activities by viewModel.recentActivities.collectAsState()
+    val allMaintenance by viewModel.allMaintenance.collectAsState()
+
+    var selectedReport by remember { mutableStateOf("Genel Envanter Raporu") }
+    var isExportingExcel by remember { mutableStateOf(false) }
+    var isExportingPdf by remember { mutableStateOf(false) }
 
     val reportTypes = listOf(
-        "Demirbaş Listesi",
-        "Zimmet Raporu",
-        "Bölüm Bazlı",
-        "Konum Bazlı",
-        "Bakım Raporu",
-        "Garanti Bitiş",
-        "Sayım Raporu",
-        "Hurda Raporu",
-        "İşlem Geçmişi",
-        "Değer Raporu"
+        "Genel Envanter Raporu",
+        "Zimmetli Demirbaşlar",
+        "Boşta / Tahsis Bekleyen",
+        "Bakım & Onarım Raporu",
+        "Departman Analizi"
     )
 
-    var selectedReport by remember { mutableStateOf(reportTypes[0]) }
+    val displayedAssets = remember(selectedReport, assets) {
+        when (selectedReport) {
+            "Zimmetli Demirbaşlar" -> assets.filter { it.status == AssetStatus.ASSIGNED.name }
+            "Boşta / Tahsis Bekleyen" -> assets.filter { it.status == AssetStatus.AVAILABLE.name }
+            "Bakım & Onarım Raporu" -> assets.filter { it.status == AssetStatus.MAINTENANCE.name || it.status == AssetStatus.FAULTY.name }
+            else -> assets
+        }
+    }
+
+    val totalValue = remember(displayedAssets) {
+        displayedAssets.sumOf { it.purchasePrice }
+    }
 
     val currencyFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale("tr", "TR")).apply {
@@ -61,7 +76,7 @@ fun ReportsScreen(viewModel: InventoryViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(BackgroundDark)
     ) {
         // Top App Bar
         Row(
@@ -69,43 +84,40 @@ fun ReportsScreen(viewModel: InventoryViewModel) {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .background(SurfaceDark)
+                .padding(horizontal = 8.dp, vertical = 10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
+                IconButton(
+                    onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) },
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Geri", tint = TextPrimary)
                 }
-                Text(
-                    text = "Kurumsal Raporlar",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                    color = NavyDark
-                )
-            }
-
-            Button(
-                onClick = {
-                    val csv = ExportUtil.generateAssetCsv(assets)
-                    ExportUtil.shareText(context, "AKYOL_${selectedReport.replace(" ", "_")}.csv", csv)
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Excel / CSV Aktar", fontSize = 12.sp)
+                Spacer(modifier = Modifier.width(4.dp))
+                Column {
+                    Text(
+                        text = "Kurumsal Raporlar",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "Excel (.xlsx) ve PDF raporlama modülü",
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                }
             }
         }
 
-        // Report Type Horizontal Selector
+        // Report Type Selector Chips
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
+                .background(SurfaceDark)
         ) {
             items(reportTypes) { rep ->
                 FilterChip(
@@ -113,8 +125,16 @@ fun ReportsScreen(viewModel: InventoryViewModel) {
                     onClick = { selectedReport = rep },
                     label = { Text(rep, fontSize = 12.sp) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = TurquoiseDark,
-                        selectedLabelColor = Color.White
+                        selectedContainerColor = AccentTeal,
+                        selectedLabelColor = BackgroundDark,
+                        containerColor = CardSurfaceDark,
+                        labelColor = TextSecondary
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = selectedReport == rep,
+                        borderColor = BorderDark,
+                        selectedBorderColor = AccentTeal
                     )
                 )
             }
@@ -122,14 +142,15 @@ fun ReportsScreen(viewModel: InventoryViewModel) {
 
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            // Report Header Card
+            // Report Header & Summary Card
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = NavyDark),
+                    colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
@@ -137,158 +158,192 @@ fun ReportsScreen(viewModel: InventoryViewModel) {
                             text = selectedReport,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = TextPrimary
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Akyol Envanter Yönetimi • Otomatik Konsolide Veri",
-                            fontSize = 11.sp,
-                            color = TurquoiseLight
+                            text = "Rapor Tarihi: ${SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr", "TR")).format(Date())}",
+                            fontSize = 12.sp,
+                            color = TextSecondary
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
 
+                        Spacer(modifier = Modifier.height(14.dp))
+                        HorizontalDivider(color = BorderDark)
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Stats Summary Row
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column {
-                                Text("Toplam Demirbaş", fontSize = 11.sp, color = TextMutedDark)
-                                Text("${assets.size} Adet", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Listelenen Demirbaş", fontSize = 12.sp, color = TextMuted)
+                                Text("${displayedAssets.size} Adet", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                             }
-                            Column {
-                                Text("Toplam Portföy Değeri", fontSize = 11.sp, color = TextMutedDark)
-                                Text(currencyFormatter.format(assets.sumOf { it.purchasePrice }), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TurquoiseLight)
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("Toplam Portföy Değeri", fontSize = 12.sp, color = TextMuted)
+                                Text(currencyFormatter.format(totalValue), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = AccentTealLight)
                             }
-                            Column {
-                                Text("Zimmet Oranı", fontSize = 11.sp, color = TextMutedDark)
-                                val ratio = if (assets.isNotEmpty()) (assets.count { it.status == AssetStatus.ASSIGNED.name } * 100 / assets.size) else 0
-                                Text("%$ratio", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = BrightBlue)
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Real Export Action Buttons (Excel & PDF)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // 1. Real Excel (.xlsx) Export
+                            Button(
+                                onClick = {
+                                    isExportingExcel = true
+                                    val result = ExportUtil.exportToXlsx(context, displayedAssets, selectedReport)
+                                    isExportingExcel = false
+                                    result.onSuccess { file ->
+                                        viewModel.showMessage("Excel dosyası hazırlandı.")
+                                        ExportUtil.shareFile(
+                                            context,
+                                            file,
+                                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                            "AKYOL_$selectedReport.xlsx"
+                                        )
+                                    }.onFailure { err ->
+                                        Log.e(TAG, "Excel oluşturma hatası", err)
+                                        viewModel.showMessage("Excel dosyası oluşturulamadı: ${err.localizedMessage}")
+                                    }
+                                },
+                                enabled = !isExportingExcel,
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f).height(46.dp)
+                            ) {
+                                if (isExportingExcel) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = BackgroundDark, strokeWidth = 2.dp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Hazırlanıyor...", color = BackgroundDark, fontSize = 12.sp)
+                                } else {
+                                    Icon(Icons.Default.TableChart, contentDescription = null, tint = BackgroundDark, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Excel'e Aktar", color = BackgroundDark, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            // 2. Real PDF Export
+                            OutlinedButton(
+                                onClick = {
+                                    isExportingPdf = true
+                                    val result = ExportUtil.exportToPdf(context, displayedAssets, selectedReport, selectedReport)
+                                    isExportingPdf = false
+                                    result.onSuccess { file ->
+                                        viewModel.showMessage("PDF raporu oluşturuldu.")
+                                        ExportUtil.shareFile(
+                                            context,
+                                            file,
+                                            "application/pdf",
+                                            "AKYOL_$selectedReport.pdf"
+                                        )
+                                    }.onFailure { err ->
+                                        Log.e(TAG, "PDF oluşturma hatası", err)
+                                        viewModel.showMessage("PDF oluşturulamadı: ${err.localizedMessage}")
+                                    }
+                                },
+                                enabled = !isExportingPdf,
+                                shape = RoundedCornerShape(8.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, BorderLight),
+                                modifier = Modifier.weight(1f).height(46.dp)
+                            ) {
+                                if (isExportingPdf) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = TextPrimary, strokeWidth = 2.dp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Hazırlanıyor...", fontSize = 12.sp, color = TextPrimary)
+                                } else {
+                                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = StatusFaulty, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("PDF'e Aktar", fontSize = 13.sp, color = TextPrimary)
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // Report Details based on Selection
-            when (selectedReport) {
-                "Değer Raporu" -> {
-                    item {
-                        Card(
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Text("Departman Bazlı Demirbaş Değer Dağılımı", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                val deptValues = assets.groupBy { it.department }.mapValues { (_, list) -> list.sumOf { it.purchasePrice } }
-                                val maxVal = deptValues.values.maxOrNull() ?: 1.0
+            // Department breakdown in "Departman Analizi"
+            if (selectedReport == "Departman Analizi") {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Bölüm Bazlı Envanter Dağılımı", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = TextPrimary)
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                                deptValues.forEach { (dept, value) ->
-                                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                                        Row(
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Text(dept, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                                            Text(currencyFormatter.format(value), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TurquoiseDark)
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        LinearProgressIndicator(
-                                            progress = { (value / maxVal).toFloat() },
-                                            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-                                            color = TurquoiseDark,
-                                            trackColor = NeutralCardBorder
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                "Garanti Bitiş" -> {
-                    val expiringAssets = assets.filter { it.warrantyEndDate.contains("2024") || it.warrantyEndDate.contains("2025") }
-                    items(expiringAssets) { a ->
-                        Card(
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.padding(14.dp).fillMaxWidth()
-                            ) {
-                                Column {
-                                    Text(a.assetCode, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TurquoiseDark)
-                                    Text(a.assetName, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                                    Text("Bölüm: ${a.department}", fontSize = 11.sp, color = TextSecondaryLight)
-                                }
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text("Garanti Bitiş", fontSize = 10.sp, color = TextSecondaryLight)
-                                    Text(a.warrantyEndDate, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = WarningAmber)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                "Bakım Raporu" -> {
-                    items(maintenance) { m ->
-                        Card(
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
+                            val deptGroups = assets.groupBy { it.department }
+                            deptGroups.forEach { (dept, list) ->
                                 Row(
+                                    verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp)
                                 ) {
-                                    Text("${m.assetCode} - ${m.maintenanceType}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text(currencyFormatter.format(m.cost), fontWeight = FontWeight.Bold, color = TurquoiseDark)
+                                    Text(dept, fontSize = 13.sp, color = TextPrimary)
+                                    Text("${list.size} adet • ${currencyFormatter.format(list.sumOf { it.purchasePrice })}", fontSize = 13.sp, color = TextSecondary)
                                 }
-                                Text(m.description, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                                Text("Firma: ${m.serviceProvider} • Tarih: ${m.maintenanceDate}", fontSize = 11.sp, color = TextSecondaryLight)
+                                HorizontalDivider(color = BorderDark.copy(alpha = 0.5f))
                             }
                         }
                     }
                 }
+            }
 
-                else -> {
-                    // Standard tabular asset listing
-                    items(assets) { a ->
-                        Card(
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.navigateTo(AppScreen.ASSET_DETAIL, a.assetCode) }
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.padding(12.dp).fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(a.assetCode, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = TurquoiseDark)
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(a.category, fontSize = 11.sp, color = TextSecondaryLight)
-                                    }
-                                    Text(a.assetName, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-                                    Text("${a.department} • ${a.building} ${a.room}", fontSize = 11.sp, color = TextSecondaryLight)
-                                }
+            // Asset preview table list
+            item {
+                Text(
+                    text = "Rapor Kapsamındaki Demirbaşlar (${displayedAssets.size})",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    color = TextPrimary
+                )
+            }
 
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text(currencyFormatter.format(a.purchasePrice), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NavyDark)
-                                    Text(a.getStatusEnum().labelTr, fontSize = 11.sp, color = StatusAssigned, fontWeight = FontWeight.SemiBold)
-                                }
+            items(displayedAssets.take(20)) { asset ->
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(asset.assetName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary, maxLines = 1)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(asset.assetCode, style = SmallCodeTextStyle)
+                                Text(" • ${asset.department}", fontSize = 11.sp, color = TextSecondary)
                             }
                         }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(currencyFormatter.format(asset.purchasePrice), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            StatusBadge(status = AssetStatus.fromString(asset.status))
+                        }
                     }
+                }
+            }
+
+            if (displayedAssets.size > 20) {
+                item {
+                    Text(
+                        text = "+ ${displayedAssets.size - 20} adet daha... Tam listeyi incelemek için yukarıdaki Excel'e Aktar butonunu kullanabilirsiniz.",
+                        fontSize = 12.sp,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
                 }
             }
 

@@ -5,8 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -24,26 +24,31 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.screens.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.AppScreen
 import com.example.ui.viewmodel.InventoryViewModel
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: InventoryViewModel by viewModels()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             AkyolInventoryTheme {
+                val viewModel: InventoryViewModel = viewModel()
                 val currentScreen by viewModel.currentScreen.collectAsState()
                 val userMessage by viewModel.userMessage.collectAsState()
                 val snackbarHostState = remember { SnackbarHostState() }
 
+                // Display Toast / Snackbar messages
                 LaunchedEffect(userMessage) {
                     userMessage?.let { msg ->
-                        snackbarHostState.showSnackbar(msg)
+                        snackbarHostState.showSnackbar(
+                            message = msg,
+                            duration = SnackbarDuration.Short
+                        )
                         viewModel.clearMessage()
                     }
                 }
@@ -58,15 +63,24 @@ class MainActivity : ComponentActivity() {
                 }
 
                 Scaffold(
-                    snackbarHost = { SnackbarHost(snackbarHostState) },
+                    snackbarHost = {
+                        SnackbarHost(snackbarHostState) { data ->
+                            Snackbar(
+                                snackbarData = data,
+                                containerColor = CardSurfaceElevated,
+                                contentColor = TextPrimary,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                    },
                     contentWindowInsets = WindowInsets.safeDrawing,
                     bottomBar = {
-                        // Show bottom navigation bar on all top-level screens
                         AkyolBottomNavigation(
                             currentScreen = currentScreen,
                             onNavigate = { screen -> viewModel.navigateTo(screen) }
                         )
                     },
+                    containerColor = BackgroundDark,
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
                     Box(
@@ -99,11 +113,17 @@ fun AkyolBottomNavigation(
     onNavigate: (AppScreen) -> Unit
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp,
-        shadowElevation = 16.dp,
+        color = SurfaceDark,
+        tonalElevation = 6.dp,
+        shadowElevation = 12.dp,
         modifier = Modifier
             .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = BorderDark,
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            )
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             .navigationBarsPadding()
     ) {
         Row(
@@ -111,7 +131,7 @@ fun AkyolBottomNavigation(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp)
+                .padding(vertical = 6.dp, horizontal = 4.dp)
         ) {
             BottomNavItem(
                 title = "Ana Sayfa",
@@ -127,11 +147,11 @@ fun AkyolBottomNavigation(
                 onClick = { onNavigate(AppScreen.ASSET_LIST) }
             )
 
-            // Prominent Central Camera / AI Scan Button
+            // Prominent Central Camera / AI Scan Button (Requirement 6)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .offset(y = (-10).dp)
+                    .offset(y = (-8).dp)
                     .clickable { onNavigate(AppScreen.ASSET_ADD_EDIT) }
             ) {
                 Box(
@@ -139,14 +159,14 @@ fun AkyolBottomNavigation(
                         .size(54.dp)
                         .shadow(8.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(TurquoisePrimary),
+                        .background(AccentTeal),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = "Kamera / AI Ekle",
-                        tint = NavyDark,
-                        modifier = Modifier.size(28.dp)
+                        tint = BackgroundDark,
+                        modifier = Modifier.size(26.dp)
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
@@ -154,7 +174,7 @@ fun AkyolBottomNavigation(
                     text = "Kamera",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TurquoiseDark
+                    color = AccentTeal
                 )
             }
 
@@ -186,22 +206,23 @@ fun BottomNavItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
+            .defaultMinSize(minWidth = 54.dp, minHeight = 48.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = if (isSelected) TurquoiseDark else TextMutedLight,
+            tint = if (isSelected) AccentTeal else TextMuted,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = title,
             fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) TurquoiseDark else TextMutedLight
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) TextPrimary else TextSecondary
         )
     }
 }

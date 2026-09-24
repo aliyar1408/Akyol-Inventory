@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,14 +46,13 @@ fun AuditScreen(viewModel: InventoryViewModel) {
     val wrongLocationCount = auditItems.count { it.status == "YANLIS_KONUM" }
     val scannedTotal = (foundCount + wrongLocationCount).coerceAtMost(totalTarget)
     val pendingCount = (totalTarget - scannedTotal).coerceAtLeast(0)
-    val missingCount = 0 // In real audits, after session ends, remaining pending become missing
 
     val progressPercent = if (totalTarget > 0) (scannedTotal.toFloat() / totalTarget) else 0f
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(BackgroundDark)
     ) {
         // Header
         Row(
@@ -60,52 +60,44 @@ fun AuditScreen(viewModel: InventoryViewModel) {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .background(SurfaceDark)
+                .padding(horizontal = 8.dp, vertical = 10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
+                IconButton(
+                    onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) },
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Geri", tint = TextPrimary)
                 }
+                Spacer(modifier = Modifier.width(4.dp))
                 Column {
                     Text(
                         text = sessionName,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = NavyDark
+                        fontSize = 17.sp,
+                        color = TextPrimary
                     )
                     Text(
                         text = "Aktif Sayım Oturumu • $currentScanLocation",
-                        fontSize = 11.sp,
-                        color = TextSecondaryLight
+                        fontSize = 12.sp,
+                        color = TextSecondary
                     )
                 }
             }
 
             Button(
                 onClick = {
-                    val reportText = buildString {
-                        append("AKYOL INVENTORY - SAYIM RAPORU\n")
-                        append("Oturum: $sessionName\n")
-                        append("Tarih: 2026-09-24\n")
-                        append("Toplam Hedef: $totalTarget\n")
-                        append("Bulunan: $foundCount\n")
-                        append("Yanlış Konumda: $wrongLocationCount\n")
-                        append("Bekleyen: $pendingCount\n\n")
-                        append("TARANAN DEMİRBAŞLAR:\n")
-                        auditItems.forEach {
-                            append("${it.assetCode} - ${it.assetName} [${it.status}] (Beklenen: ${it.expectedLocation}, Taranan: ${it.scannedLocation})\n")
-                        }
-                    }
-                    ExportUtil.shareText(context, "Sayım Raporu: $sessionName", reportText)
+                    val csv = ExportUtil.generateAssetCsv(assets)
+                    ExportUtil.shareText(context, "SAYIM_RAPORU.csv", csv)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = NavyDark),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                Icon(Icons.Default.Download, contentDescription = null, tint = BackgroundDark, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Raporla", fontSize = 11.sp)
+                Text("Dışa Aktar", fontSize = 12.sp, color = BackgroundDark, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -118,43 +110,43 @@ fun AuditScreen(viewModel: InventoryViewModel) {
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
+                    colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Sayım İlerleme Durumu", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("%${(progressPercent * 100).toInt()} Tamamlandı", fontWeight = FontWeight.Bold, color = TurquoiseDark)
+                            Text("Sayım İlerlemesi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
+                            Text("%${(progressPercent * 100).toInt()}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = AccentTeal)
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         LinearProgressIndicator(
                             progress = { progressPercent },
+                            color = AccentTeal,
+                            trackColor = SurfaceDark,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(10.dp)
-                                .clip(RoundedCornerShape(5.dp)),
-                            color = TurquoisePrimary,
-                            trackColor = NeutralCardBorder
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
                         )
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        // Audit 4-Status Metrics Bar
+                        // Stats Grid (Bulunan, Yanlış Konum, Kalan)
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            AuditMetricBadge("Bulunan", foundCount.toString(), StatusAvailable, Modifier.weight(1f))
-                            AuditMetricBadge("Bekleyen", pendingCount.toString(), WarningAmber, Modifier.weight(1f))
-                            AuditMetricBadge("Yanlış Konum", wrongLocationCount.toString(), Color(0xFF8B5CF6), Modifier.weight(1f))
-                            AuditMetricBadge("Bulunamayan", missingCount.toString(), StatusFaulty, Modifier.weight(1f))
+                            AuditStatBox("Taranan", "$scannedTotal", StatusAssigned)
+                            AuditStatBox("Bulunan", "$foundCount", StatusAvailable)
+                            AuditStatBox("Farklı Konum", "$wrongLocationCount", StatusMaintenance)
+                            AuditStatBox("Bekleyen", "$pendingCount", TextSecondary)
                         }
                     }
                 }
@@ -163,92 +155,58 @@ fun AuditScreen(viewModel: InventoryViewModel) {
             // Quick Scan Bar
             item {
                 Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Karekod / Barkod Sayım Taraması", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text("Sayım lokasyonunu seçin ve demirbaş kodunu okutun.", fontSize = 11.sp, color = TextSecondaryLight)
-
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Hızlı Barkod / QR Sayım Girişi",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = TextPrimary
+                        )
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Location Selector
-                        val locList = listOf("A Blok Kat 3", "B Blok Kat 2", "A Blok Kat 4", "C Blok Zemin Kat", "A Blok Kat 1")
-                        var locExpanded by remember { mutableStateOf(false) }
-                        Box {
-                            OutlinedButton(
-                                onClick = { locExpanded = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Sayım Alanı: $currentScanLocation", fontSize = 12.sp)
-                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                                }
-                            }
-                            DropdownMenu(expanded = locExpanded, onDismissRequest = { locExpanded = false }) {
-                                locList.forEach { loc ->
-                                    DropdownMenuItem(text = { Text(loc) }, onClick = {
-                                        currentScanLocation = loc
-                                        locExpanded = false
-                                    })
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             OutlinedTextField(
                                 value = manualScanInput,
                                 onValueChange = { manualScanInput = it },
-                                placeholder = { Text("Kodu girin veya seçin...", fontSize = 12.sp) },
+                                placeholder = { Text("Kod okutun veya yazın...", fontSize = 13.sp, color = TextMuted) },
+                                textStyle = CodeTextStyle,
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AccentTeal,
+                                    unfocusedBorderColor = BorderDark,
+                                    focusedTextColor = TextPrimary,
+                                    unfocusedTextColor = TextPrimary,
+                                    focusedContainerColor = SurfaceDark,
+                                    unfocusedContainerColor = SurfaceDark
+                                ),
                                 modifier = Modifier.weight(1f)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
                                 onClick = {
                                     if (manualScanInput.isNotBlank()) {
-                                        viewModel.processAuditScan(manualScanInput.trim(), currentScanLocation)
+                                        val code = manualScanInput.trim()
+                                        viewModel.processAuditScan(
+                                            scannedCode = code,
+                                            scannedLocation = currentScanLocation
+                                        )
                                         manualScanInput = ""
                                     }
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
-                                shape = RoundedCornerShape(8.dp)
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(50.dp)
                             ) {
-                                Text("Tara")
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Quick simulator chips for fast testing in streaming emulator
-                        Text("Simülatör Hızlı Tarama Tuşları:", fontSize = 11.sp, color = TextSecondaryLight)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(assets.take(7)) { a ->
-                                Surface(
-                                    color = NeutralCardBorder.copy(alpha = 0.5f),
-                                    shape = RoundedCornerShape(6.dp),
-                                    modifier = Modifier.clickable {
-                                        viewModel.processAuditScan(a.assetCode, currentScanLocation)
-                                    }
-                                ) {
-                                    Text(
-                                        text = a.assetCode,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
+                                Text("Say", color = BackgroundDark, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -262,69 +220,65 @@ fun AuditScreen(viewModel: InventoryViewModel) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Taranan Demirbaşlar (${auditItems.size})", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(
+                        text = "Sayım Listesi (${auditItems.size})",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "$currentScanLocation",
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
                 }
             }
 
             if (auditItems.isEmpty()) {
                 item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        Text("Henüz demirbaş taraması yapılmadı. Yukarıdaki kodları kullanarak tarama başlatabilirsiniz.", fontSize = 12.sp, color = TextSecondaryLight)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = TextMuted, modifier = Modifier.size(48.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text("Bu oturumda henüz sayım kaydı yapılmadı.", color = TextSecondary, fontSize = 13.sp)
+                        }
                     }
                 }
             } else {
                 items(auditItems) { item ->
                     Card(
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.padding(12.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (item.status == "BULUNAN") StatusAvailable.copy(alpha = 0.15f) else Color(0xFF8B5CF6).copy(alpha = 0.15f)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (item.status == "BULUNAN") Icons.Default.Check else Icons.Default.WrongLocation,
-                                    contentDescription = null,
-                                    tint = if (item.status == "BULUNAN") StatusAvailable else Color(0xFF8B5CF6),
-                                    modifier = Modifier.size(20.dp)
-                                )
+                            Column {
+                                Text(item.assetCode, style = CodeTextStyle)
+                                Text("Taranan Konum: ${item.scannedLocation}", fontSize = 12.sp, color = TextSecondary)
+                                Text(java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale("tr", "TR")).format(java.util.Date(item.scanTime)), fontSize = 11.sp, color = TextMuted)
                             }
 
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(item.assetCode, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Surface(
-                                        color = if (item.status == "BULUNAN") StatusAvailable.copy(alpha = 0.15f) else Color(0xFF8B5CF6).copy(alpha = 0.15f),
-                                        shape = RoundedCornerShape(4.dp)
-                                    ) {
-                                        Text(
-                                            text = if (item.status == "BULUNAN") "Bulundu" else "Yanlış Konumda",
-                                            color = if (item.status == "BULUNAN") StatusAvailable else Color(0xFF8B5CF6),
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
-                                Text(item.assetName, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
-                                Text("Beklenen: ${item.expectedLocation} • Taranan: ${item.scannedLocation}", fontSize = 11.sp, color = TextSecondaryLight)
+                            Surface(
+                                color = if (item.status == "BULUNAN") StatusAvailable.copy(alpha = 0.2f) else StatusMaintenance.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = if (item.status == "BULUNAN") "Bulundu" else "Farklı Konum",
+                                    color = if (item.status == "BULUNAN") StatusAvailable else StatusMaintenance,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
                             }
                         }
                     }
@@ -339,18 +293,9 @@ fun AuditScreen(viewModel: InventoryViewModel) {
 }
 
 @Composable
-fun AuditMetricBadge(title: String, count: String, color: Color, modifier: Modifier = Modifier) {
-    Card(
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
-        modifier = modifier
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp).fillMaxWidth()
-        ) {
-            Text(count, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = color)
-            Text(title, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, color = color, maxLines = 1)
-        }
+private fun AuditStatBox(title: String, count: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(count, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = color)
+        Text(title, fontSize = 11.sp, color = TextSecondary)
     }
 }

@@ -48,7 +48,7 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NavyDark)
+            .background(BackgroundDark)
     ) {
         // Scanner Top Bar
         Row(
@@ -56,22 +56,29 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp)
+                .background(SurfaceDark)
+                .padding(horizontal = 8.dp, vertical = 10.dp)
         ) {
-            IconButton(onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Geri", tint = Color.White)
+            IconButton(
+                onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) },
+                modifier = Modifier.size(44.dp)
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Geri", tint = TextPrimary)
             }
             Text(
                 text = "QR / Barkod Tarayıcı",
                 fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
-                color = Color.White
+                fontSize = 18.sp,
+                color = TextPrimary
             )
-            IconButton(onClick = { flashEnabled = !flashEnabled }) {
+            IconButton(
+                onClick = { flashEnabled = !flashEnabled },
+                modifier = Modifier.size(44.dp)
+            ) {
                 Icon(
                     imageVector = if (flashEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff,
                     contentDescription = "Flaş",
-                    tint = if (flashEnabled) WarningAmber else Color.White
+                    tint = if (flashEnabled) StatusMaintenance else TextSecondary
                 )
             }
         }
@@ -88,8 +95,8 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
                 modifier = Modifier
                     .size(240.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .border(2.dp, TurquoisePrimary, RoundedCornerShape(20.dp))
-                    .background(Color.Black.copy(alpha = 0.4f))
+                    .border(2.dp, AccentTeal, RoundedCornerShape(20.dp))
+                    .background(Color.Black.copy(alpha = 0.5f))
             ) {
                 // Moving laser scan line
                 Box(
@@ -97,14 +104,14 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
                         .fillMaxWidth()
                         .height(2.dp)
                         .offset(y = laserOffset.dp)
-                        .background(TurquoiseLight)
+                        .background(AccentTealLight)
                 )
 
                 // Corner brackets
                 Icon(
                     Icons.Default.CropFree,
                     contentDescription = null,
-                    tint = TurquoisePrimary.copy(alpha = 0.6f),
+                    tint = AccentTeal.copy(alpha = 0.7f),
                     modifier = Modifier.fillMaxSize().padding(12.dp)
                 )
             }
@@ -117,13 +124,13 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
             ) {
                 Text(
                     text = "Karekod veya Barkodu Çerçeveye Hizalayın",
-                    color = Color.White,
+                    color = TextPrimary,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Kayıt otomatik olarak açılacaktır",
-                    color = TextMutedDark,
+                    text = "Demirbaş detayları otomatik olarak açılacaktır",
+                    color = TextSecondary,
                     fontSize = 11.sp
                 )
             }
@@ -132,7 +139,8 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
         // Bottom Controls: Quick Test Buttons & Manual Code Input
         Card(
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
@@ -140,7 +148,7 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
                     text = "Hızlı Test: Simüle Tarama",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextSecondaryLight
+                    color = TextSecondary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -151,9 +159,9 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
                 ) {
                     items(assets.take(6)) { a ->
                         Surface(
-                            color = TurquoiseDark.copy(alpha = 0.1f),
+                            color = SurfaceDark,
                             shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, TurquoiseDark.copy(alpha = 0.3f)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                             modifier = Modifier.clickable {
                                 viewModel.navigateTo(AppScreen.ASSET_DETAIL, a.assetCode)
                             }
@@ -162,9 +170,9 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
-                                Icon(Icons.Default.QrCode, contentDescription = null, tint = TurquoiseDark, modifier = Modifier.size(14.dp))
+                                Icon(Icons.Default.QrCode, contentDescription = null, tint = AccentTeal, modifier = Modifier.size(14.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(a.assetCode, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TurquoiseDark)
+                                Text(a.assetCode, style = SmallCodeTextStyle)
                             }
                         }
                     }
@@ -176,7 +184,7 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
                     text = "Veya Kodu Manuel Olarak Girin",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextSecondaryLight
+                    color = TextSecondary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -187,9 +195,18 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
                     OutlinedTextField(
                         value = manualCode,
                         onValueChange = { manualCode = it },
-                        placeholder = { Text("Örn: AKY-2026-000001", fontSize = 13.sp) },
+                        placeholder = { Text("Örn: AKY-PC-000124", fontSize = 13.sp, color = TextMuted) },
+                        textStyle = CodeTextStyle,
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AccentTeal,
+                            unfocusedBorderColor = BorderDark,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceDark,
+                            unfocusedContainerColor = SurfaceDark
+                        ),
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -204,10 +221,11 @@ fun QrScannerScreen(viewModel: InventoryViewModel) {
                                 }
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
-                        shape = RoundedCornerShape(10.dp)
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.height(50.dp)
                     ) {
-                        Text("Git")
+                        Text("Git", color = BackgroundDark, fontWeight = FontWeight.Bold)
                     }
                 }
             }

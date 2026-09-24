@@ -41,7 +41,7 @@ fun DashboardScreen(viewModel: InventoryViewModel) {
     val activities by viewModel.recentActivities.collectAsState()
     val currentRole by viewModel.currentRole.collectAsState()
 
-    // Calculations
+    // Status counts
     val totalCount = assets.size
     val assignedCount = assets.count { it.status == AssetStatus.ASSIGNED.name }
     val availableCount = assets.count { it.status == AssetStatus.AVAILABLE.name }
@@ -50,7 +50,6 @@ fun DashboardScreen(viewModel: InventoryViewModel) {
     val lostCount = assets.count { it.status == AssetStatus.LOST.name }
     val retiredCount = assets.count { it.status == AssetStatus.RETIRED.name }
     val totalValue = assets.sumOf { it.purchasePrice }
-    val addedThisMonth = assets.count { it.purchaseDate.startsWith("2024-03") || it.purchaseDate.startsWith("2024-05") || it.purchaseDate.startsWith("2024-09") || it.purchaseDate.startsWith("2026") }
 
     val currencyFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale("tr", "TR")).apply {
@@ -61,235 +60,255 @@ fun DashboardScreen(viewModel: InventoryViewModel) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundDark)
     ) {
-        // App Header & Branding
+        // 1. App Header & Enterprise Portfolio Summary
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = NavyDark),
-                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark),
+                shape = RoundedCornerShape(18.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp)
-                ) {
+                Column(modifier = Modifier.padding(18.dp)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Geometric Cube / QR inspired Logo Mark
+                            // Logo Box
                             Box(
                                 modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(TurquoisePrimary),
+                                    .size(42.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(CardSurfaceElevated)
+                                    .border(1.dp, BorderLight, RoundedCornerShape(10.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     Icons.Default.Inventory2,
                                     contentDescription = "Logo",
-                                    tint = NavyDark,
-                                    modifier = Modifier.size(26.dp)
+                                    tint = AccentTeal,
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
                                     text = "AKYOL INVENTORY",
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 19.sp,
-                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = TextPrimary,
                                     letterSpacing = 0.5.sp
                                 )
                                 Text(
                                     text = "Demirbaş Yönetim Sistemi",
                                     fontSize = 12.sp,
-                                    color = TurquoiseLight
+                                    color = TextSecondary
                                 )
                             }
                         }
 
-                        // Role Tag
+                        // Role Indicator
                         Surface(
-                            color = BrightBlue.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(20.dp)
+                            color = CardSurfaceDark,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderLight),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Text(
                                 text = currentRole.name,
-                                color = BrightBlue,
-                                fontWeight = FontWeight.Bold,
+                                color = AccentTealLight,
+                                fontWeight = FontWeight.SemiBold,
                                 fontSize = 11.sp,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = BorderDark)
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Total Value Banner
+                    // Portfolio Value Row
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(NavySurface)
-                            .padding(horizontal = 16.dp, vertical = 14.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Column {
                             Text(
-                                text = "Toplam Demirbaş Portföy Değeri",
-                                fontSize = 11.sp,
-                                color = TextMutedDark
+                                text = "Toplam Demirbaş Değeri",
+                                fontSize = 12.sp,
+                                color = TextSecondary
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = currencyFormatter.format(totalValue),
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Black,
-                                color = TurquoiseLight
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
                             )
                         }
 
-                        Button(
+                        OutlinedButton(
                             onClick = { viewModel.navigateTo(AppScreen.REPORTS) },
-                            colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            shape = RoundedCornerShape(10.dp)
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderLight),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                         ) {
-                            Icon(Icons.Default.BarChart, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.BarChart, contentDescription = null, tint = AccentTeal, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Raporlar", fontSize = 12.sp)
+                            Text("Raporlar", fontSize = 12.sp, color = TextPrimary)
                         }
                     }
                 }
             }
         }
 
-        // Quick Actions Row
+        // 2. Quick Actions
         item {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 QuickActionCard(
-                    title = "+ Demirbaş Ekle",
+                    title = "Demirbaş Ekle",
                     icon = Icons.Default.AddCircle,
-                    color = TurquoiseDark,
                     modifier = Modifier.weight(1f),
                     onClick = { viewModel.navigateTo(AppScreen.ASSET_ADD_EDIT) }
                 )
                 QuickActionCard(
                     title = "QR / Barkod",
                     icon = Icons.Default.QrCodeScanner,
-                    color = BrightBlue,
                     modifier = Modifier.weight(1f),
                     onClick = { viewModel.navigateTo(AppScreen.QR_SCANNER) }
                 )
                 QuickActionCard(
-                    title = "Sayım Modu",
+                    title = "Sayım",
                     icon = Icons.Default.FactCheck,
-                    color = WarningAmber,
                     modifier = Modifier.weight(1f),
                     onClick = { viewModel.navigateTo(AppScreen.AUDIT) }
                 )
                 QuickActionCard(
-                    title = "Dışa Aktar",
+                    title = "Excel Aktar",
                     icon = Icons.Default.FileDownload,
-                    color = NavyLight,
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        val csv = ExportUtil.generateAssetCsv(assets)
-                        ExportUtil.shareText(context, "AKYOL_Demirbas_Listesi.csv", csv)
+                        val result = ExportUtil.exportToXlsx(context, assets, "Tüm Demirbaşlar")
+                        result.onSuccess { file ->
+                            viewModel.showMessage("Excel dosyası hazırlandı.")
+                            ExportUtil.shareFile(
+                                context,
+                                file,
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                "Akyol Inventory Excel İndir"
+                            )
+                        }.onFailure { err ->
+                            android.util.Log.e("DashboardScreen", "Excel export error", err)
+                            viewModel.showMessage("Excel dosyası oluşturulamadı: ${err.localizedMessage}")
+                        }
                     }
                 )
             }
         }
 
-        // Section Title: Demirbaş Durum Özeti
+        // 3. Section Title: Demirbaş Durum Özeti
         item {
-            Text(
-                text = "Demirbaş Durum Özeti",
-                fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Demirbaş Durum Özeti",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "${assets.size} Kayıt",
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+            }
         }
 
-        // Summary Metric Cards Grid (Clickable to filtered list)
+        // 4. Metric Stat Cards (Redesigned as per Requirement 3: Clean, uncluttered, big number, short label, subtle indicator)
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Row 1: Toplam & Zimmetli
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                    MetricStatCard(
-                        title = "Toplam Demirbaş",
-                        value = totalCount.toString(),
-                        subtext = "Aktif Kayıt",
-                        icon = Icons.Default.Inventory,
-                        color = NavyDark,
+                    CleanMetricCard(
+                        count = totalCount,
+                        label = "Toplam Demirbaş",
+                        indicatorColor = TextCode,
+                        icon = Icons.Default.Inventory2,
                         modifier = Modifier.weight(1f),
                         onClick = {
                             viewModel.clearFilters()
                             viewModel.navigateTo(AppScreen.ASSET_LIST)
                         }
                     )
-                    MetricStatCard(
-                        title = "Zimmetli",
-                        value = assignedCount.toString(),
-                        subtext = "%${if (totalCount > 0) (assignedCount * 100 / totalCount) else 0} Kullanımda",
+                    CleanMetricCard(
+                        count = assignedCount,
+                        label = "Zimmetli",
+                        indicatorColor = StatusAssigned,
                         icon = Icons.Default.AssignmentInd,
-                        color = StatusAssigned,
                         modifier = Modifier.weight(1f),
                         onClick = {
                             viewModel.setStatusFilter(AssetStatus.ASSIGNED.name)
                             viewModel.navigateTo(AppScreen.ASSET_LIST)
                         }
                     )
-                    MetricStatCard(
-                        title = "Boşta",
-                        value = availableCount.toString(),
-                        subtext = "Tahsise Hazır",
-                        icon = Icons.Default.CheckCircle,
-                        color = StatusAvailable,
+                }
+
+                // Row 2: Boşta & Bakımda
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    CleanMetricCard(
+                        count = availableCount,
+                        label = "Boşta",
+                        indicatorColor = StatusAvailable,
+                        icon = Icons.Default.CheckCircleOutline,
                         modifier = Modifier.weight(1f),
                         onClick = {
                             viewModel.setStatusFilter(AssetStatus.AVAILABLE.name)
                             viewModel.navigateTo(AppScreen.ASSET_LIST)
                         }
                     )
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                    MetricStatCard(
-                        title = "Bakımda",
-                        value = maintenanceCount.toString(),
-                        subtext = "Servis Sürecinde",
+                    CleanMetricCard(
+                        count = maintenanceCount,
+                        label = "Bakımda",
+                        indicatorColor = StatusMaintenance,
                         icon = Icons.Default.Build,
-                        color = StatusMaintenance,
                         modifier = Modifier.weight(1f),
                         onClick = {
                             viewModel.setStatusFilter(AssetStatus.MAINTENANCE.name)
                             viewModel.navigateTo(AppScreen.ASSET_LIST)
                         }
                     )
-                    MetricStatCard(
-                        title = "Arızalı",
-                        value = faultyCount.toString(),
-                        subtext = "Müdahale Bekliyor",
-                        icon = Icons.Default.Warning,
-                        color = StatusFaulty,
+                }
+
+                // Row 3: Arızalı & Hurda/Kayıp
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    CleanMetricCard(
+                        count = faultyCount,
+                        label = "Arızalı",
+                        indicatorColor = StatusFaulty,
+                        icon = Icons.Default.ErrorOutline,
                         modifier = Modifier.weight(1f),
                         onClick = {
                             viewModel.setStatusFilter(AssetStatus.FAULTY.name)
                             viewModel.navigateTo(AppScreen.ASSET_LIST)
                         }
                     )
-                    MetricStatCard(
-                        title = "Kayıp / Hurda",
-                        value = (lostCount + retiredCount).toString(),
-                        subtext = "$lostCount Kayıp, $retiredCount Hurda",
-                        icon = Icons.Default.DeleteSweep,
-                        color = StatusLost,
+                    CleanMetricCard(
+                        count = lostCount + retiredCount,
+                        label = "Hurda / Kayıp",
+                        indicatorColor = StatusRetired,
+                        icon = Icons.Default.Archive,
                         modifier = Modifier.weight(1f),
                         onClick = {
                             viewModel.setStatusFilter(AssetStatus.RETIRED.name)
@@ -300,65 +319,51 @@ fun DashboardScreen(viewModel: InventoryViewModel) {
             }
         }
 
-        // Section: Kategori Dağılımı Grafiği (Responsive Interactive Visual Bar)
+        // 5. Category Breakdown Section
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Kategori Bazlı Dağılım",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
-                        Text(
-                            text = "Detay",
-                            color = TurquoiseDark,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clickable { viewModel.navigateTo(AppScreen.REPORTS) }
-                        )
-                    }
-
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Kategori Dağılımı",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = TextPrimary
+                    )
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    val categories = assets.groupBy { it.category }
-                        .toList()
-                        .sortedByDescending { it.second.size }
-                        .take(5)
+                    val topCategories = remember(assets) {
+                        assets.groupBy { it.category }
+                            .mapValues { it.value.size }
+                            .toList()
+                            .sortedByDescending { it.second }
+                            .take(5)
+                    }
 
-                    categories.forEach { (cat, list) ->
-                        val ratio = if (totalCount > 0) list.size.toFloat() / totalCount else 0f
+                    topCategories.forEach { (categoryName, count) ->
+                        val percent = if (totalCount > 0) (count.toFloat() / totalCount) else 0f
                         Column(modifier = Modifier.padding(vertical = 5.dp)) {
                             Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text(cat, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                                Text("${list.size} adet (%${(ratio * 100).toInt()})", fontSize = 12.sp, color = TextSecondaryLight)
+                                Text(text = categoryName, fontSize = 13.sp, color = TextPrimary)
+                                Text(text = "$count adet (%${(percent * 100).toInt()})", fontSize = 12.sp, color = TextSecondary)
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             LinearProgressIndicator(
-                                progress = { ratio },
+                                progress = { percent },
+                                color = AccentTeal,
+                                trackColor = SurfaceDark,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = when (cat) {
-                                    "Dizüstü Bilgisayar" -> TurquoisePrimary
-                                    "Monitör" -> BrightBlue
-                                    "Ağ Ekipmanı" -> NavyDark
-                                    "Mobilya" -> WarningAmber
-                                    else -> StatusAssigned
-                                },
-                                trackColor = NeutralCardBorder
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp))
                             )
                         }
                     }
@@ -366,68 +371,7 @@ fun DashboardScreen(viewModel: InventoryViewModel) {
             }
         }
 
-        // Section: Departman Dağılımı
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Departman Bazlı Demirbaşlar",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val deptMap = assets.groupBy { it.department }
-                    deptMap.forEach { (dept, list) ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.setDepartmentFilter(dept)
-                                    viewModel.navigateTo(AppScreen.ASSET_LIST)
-                                }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .clip(CircleShape)
-                                        .background(TurquoiseDark)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(dept, fontSize = 14.sp, fontWeight = FontWeight.Normal)
-                            }
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Surface(
-                                    color = NeutralCardBorder.copy(alpha = 0.5f),
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        text = "${list.size} demirbaş",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMutedLight, modifier = Modifier.size(16.dp))
-                            }
-                        }
-                        HorizontalDivider(color = NeutralCardBorder.copy(alpha = 0.5f))
-                    }
-                }
-            }
-        }
-
-        // Section: Son İşlemler (Recent Activity Feed)
+        // 6. Recent Activity Feed ("Son İşlemler")
         item {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -436,30 +380,87 @@ fun DashboardScreen(viewModel: InventoryViewModel) {
             ) {
                 Text(
                     text = "Son İşlemler",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
+                    color = TextPrimary
                 )
                 Text(
-                    text = "Tüm Geçmiş",
-                    color = TurquoiseDark,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clickable { viewModel.navigateTo(AppScreen.REPORTS) }
+                    text = "Denetim İzi",
+                    fontSize = 12.sp,
+                    color = TextSecondary
                 )
             }
         }
 
-        items(activities.take(6)) { log ->
-            ActivityFeedItem(log = log, onClick = {
-                if (log.assetCode.isNotBlank() && log.assetCode != "-") {
-                    viewModel.navigateTo(AppScreen.ASSET_DETAIL, log.assetCode)
-                }
-            })
+        items(activities.take(5)) { act ->
+            ActivityFeedItem(activity = act)
         }
 
-        // Bottom spacing
         item {
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(56.dp))
+        }
+    }
+}
+
+// Clean Metric Card as requested in Requirement 3
+@Composable
+fun CleanMetricCard(
+    count: Int,
+    label: String,
+    indicatorColor: Color,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Subtle status dot indicator
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(indicatorColor)
+                )
+
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = indicatorColor.copy(alpha = 0.85f),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Big Number
+            Text(
+                text = String.format(Locale.GERMANY, "%,d", count),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+
+            // Short Label
+            Text(
+                text = label,
+                fontSize = 13.sp,
+                color = TextSecondary,
+                maxLines = 1
+            )
         }
     }
 }
@@ -468,93 +469,37 @@ fun DashboardScreen(viewModel: InventoryViewModel) {
 fun QuickActionCard(
     title: String,
     icon: ImageVector,
-    color: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
         modifier = modifier
+            .height(76.dp)
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp).fillMaxWidth()
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(6.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(color.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = title,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = AccentTeal,
+                modifier = Modifier.size(20.dp)
             )
-        }
-    }
-}
-
-@Composable
-fun MetricStatCard(
-    title: String,
-    value: String,
-    subtext: String,
-    icon: ImageVector,
-    color: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
-        modifier = modifier.clickable(onClick = onClick)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(color.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-                }
-                Icon(Icons.Default.ArrowOutward, contentDescription = null, tint = TextMutedLight, modifier = Modifier.size(14.dp))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = title,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-            )
-            Text(
-                text = subtext,
-                fontSize = 9.sp,
-                color = TextSecondaryLight,
+                color = TextPrimary,
                 maxLines = 1
             )
         }
@@ -562,75 +507,84 @@ fun MetricStatCard(
 }
 
 @Composable
-fun ActivityFeedItem(log: ActivityLog, onClick: () -> Unit) {
+fun ActivityFeedItem(activity: ActivityLog) {
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder.copy(alpha = 0.6f)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
+        colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(12.dp)
         ) {
+            val isAdd = activity.action.contains("Eklendi", ignoreCase = true)
+            val isAssign = activity.action.contains("Zimmetlendi", ignoreCase = true)
+            val isReturn = activity.action.contains("Düşüldü", ignoreCase = true)
+            val isMaint = activity.action.contains("Bakım", ignoreCase = true)
+            val isAudit = activity.action.contains("Sayım", ignoreCase = true)
+
+            val icon = when {
+                isAdd -> Icons.Default.AddCircle
+                isAssign -> Icons.Default.AssignmentInd
+                isReturn -> Icons.Default.AssignmentReturn
+                isMaint -> Icons.Default.Build
+                isAudit -> Icons.Default.QrCodeScanner
+                else -> Icons.Default.History
+            }
+            val iconTint = when {
+                isAdd -> StatusAvailable
+                isAssign -> StatusAssigned
+                isReturn -> AccentTeal
+                isMaint -> StatusMaintenance
+                isAudit -> AccentBlue
+                else -> TextSecondary
+            }
+
             Box(
                 modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(
-                        when {
-                            log.action.contains("Zimmet", true) -> StatusAssigned.copy(alpha = 0.15f)
-                            log.action.contains("Bakım", true) -> StatusMaintenance.copy(alpha = 0.15f)
-                            log.action.contains("Oluştur", true) -> StatusAvailable.copy(alpha = 0.15f)
-                            else -> TurquoiseDark.copy(alpha = 0.15f)
-                        }
-                    ),
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(SurfaceDark),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = when {
-                        log.action.contains("Zimmet", true) -> Icons.Default.Assignment
-                        log.action.contains("Bakım", true) -> Icons.Default.Build
-                        log.action.contains("Konum", true) -> Icons.Default.LocationOn
-                        else -> Icons.Default.History
-                    },
-                    contentDescription = null,
-                    tint = TurquoiseDark,
-                    modifier = Modifier.size(18.dp)
-                )
+                Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                val detailText = if (activity.newValue.isNotBlank()) {
+                    "${activity.action}: ${activity.newValue}"
+                } else {
+                    activity.action
+                }
+                Text(
+                    text = detailText,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimary,
+                    maxLines = 2
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (activity.assetCode.isNotBlank()) {
+                        Text(
+                            text = activity.assetCode,
+                            style = SmallCodeTextStyle
+                        )
+                        Text(
+                            text = " • ",
+                            fontSize = 11.sp,
+                            color = TextMuted
+                        )
+                    }
                     Text(
-                        text = log.action,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = log.getFormattedDate(),
-                        fontSize = 10.sp,
-                        color = TextSecondaryLight
+                        text = "${activity.user} • ${activity.getFormattedDate()}",
+                        fontSize = 11.sp,
+                        color = TextMuted
                     )
                 }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = "${log.user} • ${log.newValue}",
-                    fontSize = 12.sp,
-                    color = TextSecondaryLight,
-                    maxLines = 1
-                )
             }
         }
     }

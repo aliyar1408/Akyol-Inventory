@@ -1,16 +1,16 @@
 package com.example.ui.screens
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,10 +37,12 @@ import com.example.ui.viewmodel.AppScreen
 import com.example.ui.viewmodel.FilterState
 import com.example.ui.viewmodel.InventoryViewModel
 import com.example.ui.viewmodel.WarrantyFilter
+import com.example.util.ExportUtil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AssetListScreen(viewModel: InventoryViewModel) {
+    val context = LocalContext.current
     val assets by viewModel.filteredAssets.collectAsState()
     val allAssets by viewModel.allAssets.collectAsState()
     val employees by viewModel.allEmployees.collectAsState()
@@ -47,11 +50,12 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
     val filterState by viewModel.filterState.collectAsState()
     val currentRole by viewModel.currentRole.collectAsState()
 
-    var isGridView by remember { mutableStateOf(false) }
+    var isTableView by remember { mutableStateOf(false) }
     var selectedAssetForQr by remember { mutableStateOf<Asset?>(null) }
     var selectedAssetForLabel by remember { mutableStateOf<Asset?>(null) }
     var selectedAssetForAssign by remember { mutableStateOf<Asset?>(null) }
     var showFilterDialog by remember { mutableStateOf(false) }
+    var showExportMenu by remember { mutableStateOf(false) }
 
     val activeCount = filterState.getActiveFilterCount()
 
@@ -77,12 +81,13 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(BackgroundDark)
     ) {
         // RBAC Role Notice Banner for STAFF or VIEWER
         if (currentRole == UserRole.STAFF) {
             Surface(
-                color = StatusAssigned.copy(alpha = 0.12f),
+                color = CardSurfaceDark,
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -92,39 +97,40 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
                     Icon(Icons.Default.Lock, contentDescription = null, tint = StatusAssigned, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Personel (STAFF) Görünümü: Yalnızca zimmetinizdeki ve Bilgi İşlem demirbaşları listelenmektedir.",
-                        fontSize = 11.sp,
-                        color = StatusAssigned,
+                        text = "Personel (STAFF): Yalnızca zimmetinizdeki ve biriminizdeki demirbaşlar listelenmektedir.",
+                        fontSize = 12.sp,
+                        color = TextSecondary,
                         fontWeight = FontWeight.Medium
                     )
                 }
             }
         } else if (currentRole == UserRole.VIEWER) {
             Surface(
-                color = WarningAmber.copy(alpha = 0.12f),
+                color = CardSurfaceDark,
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Icon(Icons.Default.Visibility, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Visibility, contentDescription = null, tint = StatusMaintenance, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "İzleyici (VIEWER) Modu: Salt okunur erişim. Ekleme, düzenleme ve zimmetleme devre dışıdır.",
-                        fontSize = 11.sp,
-                        color = Color(0xFF92400E),
+                        text = "İzleyici (VIEWER) Modu: Salt-okunur erişim. Değişiklik yapılamaz.",
+                        fontSize = 12.sp,
+                        color = TextSecondary,
                         fontWeight = FontWeight.Medium
                     )
                 }
             }
         }
 
-        // Search Bar and Quick Actions
+        // Top Search Bar and Action Row
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
+                .background(SurfaceDark)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(
@@ -134,22 +140,26 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.setSearchQuery(it) },
-                    placeholder = { Text("Kod, ad, seri no, marka, model, personel, konum ara...", fontSize = 12.sp) },
+                    placeholder = { Text("Kod, ad, seri no, marka, model, personel ara...", fontSize = 13.sp, color = TextMuted) },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Ara", tint = TurquoiseDark)
+                        Icon(Icons.Default.Search, contentDescription = "Ara", tint = AccentTeal)
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Temizle")
+                                Icon(Icons.Default.Clear, contentDescription = "Temizle", tint = TextSecondary)
                             }
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = TurquoisePrimary,
-                        unfocusedBorderColor = NeutralCardBorder
+                        focusedBorderColor = AccentTeal,
+                        unfocusedBorderColor = BorderDark,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedContainerColor = CardSurfaceDark,
+                        unfocusedContainerColor = CardSurfaceDark
                     ),
                     modifier = Modifier.weight(1f)
                 )
@@ -160,8 +170,8 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
                 BadgedBox(
                     badge = {
                         if (activeCount > 0) {
-                            Badge(containerColor = TurquoiseDark) {
-                                Text("$activeCount", color = Color.White, fontSize = 10.sp)
+                            Badge(containerColor = AccentTeal) {
+                                Text("$activeCount", color = BackgroundDark, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -169,30 +179,100 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
                     IconButton(
                         onClick = { showFilterDialog = true },
                         modifier = Modifier
+                            .size(46.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (activeCount > 0) TurquoiseLight.copy(alpha = 0.25f) else NeutralCardBorder.copy(alpha = 0.4f))
+                            .background(if (activeCount > 0) AccentTeal.copy(alpha = 0.2f) else CardSurfaceDark)
+                            .border(1.dp, if (activeCount > 0) AccentTeal else BorderDark, RoundedCornerShape(10.dp))
                     ) {
                         Icon(
                             imageVector = Icons.Default.FilterList,
-                            contentDescription = "Gelişmiş Filtreler",
-                            tint = if (activeCount > 0) TurquoiseDark else NavyDark
+                            contentDescription = "Filtreler",
+                            tint = if (activeCount > 0) AccentTeal else TextPrimary
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // Grid / Table View Toggle
+                // Excel Export Options Menu Button
+                Box {
+                    IconButton(
+                        onClick = { showExportMenu = true },
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(CardSurfaceDark)
+                            .border(1.dp, BorderDark, RoundedCornerShape(10.dp))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Dışa Aktar",
+                            tint = TextPrimary
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showExportMenu,
+                        onDismissRequest = { showExportMenu = false },
+                        modifier = Modifier.background(CardSurfaceElevated)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Filtrelenmiş Listeyi Excel'e Aktar (${assets.size})", color = TextPrimary) },
+                            leadingIcon = { Icon(Icons.Default.TableChart, contentDescription = null, tint = AccentTeal) },
+                            onClick = {
+                                showExportMenu = false
+                                val result = ExportUtil.exportToXlsx(context, assets, "Filtrelenmiş Liste")
+                                result.onSuccess { file ->
+                                    viewModel.showMessage("Excel dosyası hazırlandı.")
+                                    ExportUtil.shareFile(
+                                        context,
+                                        file,
+                                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                        "Demirbaş Listesi Excel"
+                                    )
+                                }.onFailure { err ->
+                                    viewModel.showMessage("Excel oluşturulamadı: ${err.localizedMessage}")
+                                }
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = { Text("Tüm Demirbaşları Excel'e Aktar (${allAssets.size})", color = TextPrimary) },
+                            leadingIcon = { Icon(Icons.Default.DownloadForOffline, contentDescription = null, tint = AccentBlue) },
+                            onClick = {
+                                showExportMenu = false
+                                val result = ExportUtil.exportToXlsx(context, allAssets, "Tüm Demirbaşlar")
+                                result.onSuccess { file ->
+                                    viewModel.showMessage("Excel dosyası hazırlandı.")
+                                    ExportUtil.shareFile(
+                                        context,
+                                        file,
+                                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                        "Tüm Demirbaşlar Excel"
+                                    )
+                                }.onFailure { err ->
+                                    viewModel.showMessage("Excel oluşturulamadı: ${err.localizedMessage}")
+                                }
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                // Card / Table View Toggle
                 IconButton(
-                    onClick = { isGridView = !isGridView },
+                    onClick = { isTableView = !isTableView },
                     modifier = Modifier
+                        .size(46.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(NeutralCardBorder.copy(alpha = 0.4f))
+                        .background(CardSurfaceDark)
+                        .border(1.dp, BorderDark, RoundedCornerShape(10.dp))
                 ) {
                     Icon(
-                        imageVector = if (isGridView) Icons.Default.ViewList else Icons.Default.GridView,
+                        imageVector = if (isTableView) Icons.Default.ViewAgenda else Icons.Default.TableRows,
                         contentDescription = "Görünüm Değiştir",
-                        tint = NavyDark
+                        tint = TextPrimary
                     )
                 }
             }
@@ -208,7 +288,19 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
                     FilterChip(
                         selected = filterState.selectedStatus == null,
                         onClick = { viewModel.setStatusFilter(null) },
-                        label = { Text("Tümü (${allAssets.size})", fontSize = 12.sp) }
+                        label = { Text("Tümü (${allAssets.size})", fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = AccentTeal,
+                            selectedLabelColor = BackgroundDark,
+                            containerColor = CardSurfaceDark,
+                            labelColor = TextSecondary
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = filterState.selectedStatus == null,
+                            borderColor = BorderDark,
+                            selectedBorderColor = AccentTeal
+                        )
                     )
                 }
 
@@ -223,7 +315,19 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
                                     viewModel.setStatusFilter(status.name)
                                 }
                             },
-                            label = { Text(status.labelTr, fontSize = 12.sp) }
+                            label = { Text(status.labelTr, fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AccentTeal,
+                                selectedLabelColor = BackgroundDark,
+                                containerColor = CardSurfaceDark,
+                                labelColor = TextSecondary
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = filterState.selectedStatus == status.name,
+                                borderColor = BorderDark,
+                                selectedBorderColor = AccentTeal
+                            )
                         )
                     }
                 }
@@ -233,7 +337,7 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
         // Active Filter Indicators Bar
         if (activeCount > 0) {
             Surface(
-                color = MaterialTheme.colorScheme.surface,
+                color = CardSurfaceDark,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -249,9 +353,9 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
                     ) {
                         Text(
                             text = "Aktif Filtre ($activeCount): ",
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TurquoiseDark
+                            color = AccentTeal
                         )
                         Text(
                             text = listOfNotNull(
@@ -263,18 +367,18 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
                                 filterState.purchaseYear?.let { "Yıl: $it" },
                                 filterState.warrantyFilter.takeIf { it != WarrantyFilter.ALL }?.labelTr
                             ).joinToString(", "),
-                            fontSize = 11.sp,
-                            color = TextSecondaryLight,
+                            fontSize = 12.sp,
+                            color = TextSecondary,
                             maxLines = 1
                         )
                     }
 
                     TextButton(onClick = { viewModel.clearFilters() }) {
-                        Text("Temizle", fontSize = 11.sp, color = CriticalCoral)
+                        Text("Temizle", fontSize = 12.sp, color = StatusFaulty)
                     }
                 }
             }
-            HorizontalDivider(color = NeutralCardBorder)
+            HorizontalDivider(color = BorderDark)
         }
 
         // Header Count & Add Button
@@ -288,7 +392,7 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
             Text(
                 text = "${assets.size} demirbaş listeleniyor",
                 fontSize = 13.sp,
-                color = TextSecondaryLight,
+                color = TextSecondary,
                 fontWeight = FontWeight.Medium
             )
 
@@ -296,18 +400,18 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
             if (currentRole == UserRole.ADMIN || currentRole == UserRole.MANAGER) {
                 Button(
                     onClick = { viewModel.navigateTo(AppScreen.ASSET_ADD_EDIT) },
-                    colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Add, contentDescription = null, tint = BackgroundDark, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("+ Demirbaş Ekle", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("+ Demirbaş Ekle", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BackgroundDark)
                 }
             }
         }
 
-        // Content: Grid or List View
+        // Content: Empty State, Table View, or Mobile Card View
         if (assets.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -319,58 +423,99 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
                     Icon(
                         Icons.Default.SearchOff,
                         contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = TextMutedLight
+                        modifier = Modifier.size(56.dp),
+                        tint = TextMuted
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Aranan Kriterlere Uygun Demirbaş Bulunamadı",
+                        text = "Kriterlere Uygun Demirbaş Bulunamadı",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = TextPrimary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Filtreleri veya arama terimini değiştirerek tekrar deneyin.",
+                        text = "Arama terimini veya filtre seçimlerini temizleyerek tekrar deneyin.",
                         fontSize = 13.sp,
-                        color = TextSecondaryLight
+                        color = TextSecondary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { viewModel.clearFilters() },
-                        colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark)
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal)
                     ) {
-                        Text("Tüm Filtreleri Temizle")
+                        Text("Filtreleri Temizle", color = BackgroundDark)
                     }
                 }
             }
-        } else if (isGridView) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+        } else if (isTableView) {
+            // Clean Horizontal Scroll Table View (for desktop / tablets / landscape)
+            LazyColumn(
                 contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(assets) { asset ->
-                    AssetGridCard(
-                        asset = asset,
-                        onClick = { viewModel.navigateTo(AppScreen.ASSET_DETAIL, asset.assetCode) },
-                        onQrClick = { selectedAssetForQr = asset }
-                    )
+                item {
+                    val scrollState = rememberScrollState()
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.horizontalScroll(scrollState)) {
+                            // Table Header
+                            Row(
+                                modifier = Modifier
+                                    .background(SurfaceDark)
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Text("Kod", style = CodeTextStyle, modifier = Modifier.width(130.dp))
+                                Text("Demirbaş Adı", fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.width(190.dp))
+                                Text("Kategori", fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.width(140.dp))
+                                Text("Marka / Model", fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.width(150.dp))
+                                Text("Zimmetli Kişi", fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.width(160.dp))
+                                Text("Konum", fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.width(130.dp))
+                                Text("Durum", fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.width(110.dp))
+                            }
+                            HorizontalDivider(color = BorderDark)
+
+                            // Table Rows
+                            assets.forEach { asset ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { viewModel.navigateTo(AppScreen.ASSET_DETAIL, asset.assetCode) }
+                                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                                ) {
+                                    Text(asset.assetCode, style = CodeTextStyle, modifier = Modifier.width(130.dp))
+                                    Text(asset.assetName, fontSize = 13.sp, color = TextPrimary, modifier = Modifier.width(190.dp))
+                                    Text(asset.category, fontSize = 13.sp, color = TextSecondary, modifier = Modifier.width(140.dp))
+                                    Text("${asset.brand} ${asset.model}".trim(), fontSize = 13.sp, color = TextSecondary, modifier = Modifier.width(150.dp))
+                                    Text(asset.assignedUserName.ifBlank { "Boşta" }, fontSize = 13.sp, color = if (asset.assignedUserName.isNotBlank()) StatusAssigned else TextSecondary, modifier = Modifier.width(160.dp))
+                                    Text("${asset.building} ${asset.room}", fontSize = 13.sp, color = TextSecondary, modifier = Modifier.width(130.dp))
+                                    Box(modifier = Modifier.width(110.dp)) {
+                                        StatusBadge(status = AssetStatus.fromString(asset.status))
+                                    }
+                                }
+                                HorizontalDivider(color = BorderDark.copy(alpha = 0.5f))
+                            }
+                        }
+                    }
                 }
                 item {
                     Spacer(modifier = Modifier.height(56.dp))
                 }
             }
         } else {
+            // Clean Mobile Card View (Requirement 4: Photo/icon, Name, Code, Category, Location, Assigned Person, Status)
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(assets) { asset ->
-                    AssetListCard(
+                    AssetCleanCard(
                         asset = asset,
                         canEdit = currentRole == UserRole.ADMIN || currentRole == UserRole.MANAGER,
                         onClick = { viewModel.navigateTo(AppScreen.ASSET_DETAIL, asset.assetCode) },
@@ -436,6 +581,175 @@ fun AssetListScreen(viewModel: InventoryViewModel) {
     }
 }
 
+// Clean Asset Card matching Requirement 4
+@Composable
+fun AssetCleanCard(
+    asset: Asset,
+    canEdit: Boolean,
+    onClick: () -> Unit,
+    onQrClick: () -> Unit,
+    onAssignClick: () -> Unit
+) {
+    val statusEnum = remember(asset.status) { AssetStatus.fromString(asset.status) }
+
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Top Row: Category Icon, Name, Code, and Status Badge
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(SurfaceDark)
+                            .border(1.dp, BorderDark, RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = when (asset.category) {
+                                "Dizüstü Bilgisayar", "Masaüstü Bilgisayar" -> Icons.Default.Computer
+                                "Monitör" -> Icons.Default.Tv
+                                "Yazıcı" -> Icons.Default.Print
+                                "Ağ Ekipmanı" -> Icons.Default.Router
+                                "Mobilya" -> Icons.Default.Chair
+                                "Telefon", "Tablet" -> Icons.Default.Smartphone
+                                else -> Icons.Default.Inventory2
+                            },
+                            contentDescription = null,
+                            tint = AccentTeal,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column {
+                        Text(
+                            text = asset.assetName,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary,
+                            maxLines = 1
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = asset.assetCode,
+                                style = SmallCodeTextStyle
+                            )
+                            Text(
+                                text = " • ${asset.category}",
+                                fontSize = 12.sp,
+                                color = TextSecondary,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+                StatusBadge(status = statusEnum)
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = BorderDark.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Sub row: Location & Assigned Person & Action Icons
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    // Location: Building, Room
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(13.dp), tint = TextMuted)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${asset.department} • ${asset.building} ${asset.room}",
+                            fontSize = 12.sp,
+                            color = TextSecondary,
+                            maxLines = 1
+                        )
+                    }
+
+                    // Assigned Person
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp),
+                            tint = if (asset.assignedUserName.isNotBlank()) StatusAssigned else TextMuted
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (asset.assignedUserName.isNotBlank()) "Zimmetli: ${asset.assignedUserName}" else "Boşta (Zimmetsiz)",
+                            fontSize = 12.sp,
+                            color = if (asset.assignedUserName.isNotBlank()) StatusAssigned else TextSecondary,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                // Action Icons
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = onQrClick,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.QrCode,
+                            contentDescription = "QR Kod",
+                            tint = TextPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    if (canEdit && statusEnum == AssetStatus.AVAILABLE) {
+                        IconButton(
+                            onClick = onAssignClick,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AssignmentInd,
+                                contentDescription = "Zimmetle",
+                                tint = StatusAssigned,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onClick,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = "Detay",
+                            tint = TextMuted,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun AdvancedFilterDialog(
     currentFilters: FilterState,
@@ -460,8 +774,9 @@ fun AdvancedFilterDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.88f)
@@ -477,26 +792,26 @@ fun AdvancedFilterDialog(
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.FilterList, contentDescription = null, tint = TurquoiseDark)
+                        Icon(Icons.Default.FilterList, contentDescription = null, tint = AccentTeal)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Gelişmiş Filtreleme",
                             fontWeight = FontWeight.Bold,
                             fontSize = 17.sp,
-                            color = NavyDark
+                            color = TextPrimary
                         )
                     }
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Kapat")
+                        Icon(Icons.Default.Close, contentDescription = "Kapat", tint = TextPrimary)
                     }
                 }
 
-                HorizontalDivider(color = NeutralCardBorder)
+                HorizontalDivider(color = BorderDark)
 
                 // Scrollable filter controls
                 LazyColumn(
                     contentPadding = PaddingValues(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     // 1. Kategori
@@ -564,7 +879,7 @@ fun AdvancedFilterDialog(
 
                     // 7. Garanti Durumu
                     item {
-                        Text("Garanti Bitiş Durumu", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
+                        Text("Garanti Bitiş Durumu", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
                         Spacer(modifier = Modifier.height(6.dp))
                         WarrantyFilter.entries.forEach { wf ->
                             Row(
@@ -576,16 +891,17 @@ fun AdvancedFilterDialog(
                             ) {
                                 RadioButton(
                                     selected = tempWarranty == wf,
-                                    onClick = { tempWarranty = wf }
+                                    onClick = { tempWarranty = wf },
+                                    colors = RadioButtonDefaults.colors(selectedColor = AccentTeal)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(wf.labelTr, fontSize = 13.sp)
+                                Text(wf.labelTr, fontSize = 13.sp, color = TextPrimary)
                             }
                         }
                     }
                 }
 
-                HorizontalDivider(color = NeutralCardBorder)
+                HorizontalDivider(color = BorderDark)
 
                 // Bottom Actions: Reset & Apply
                 Row(
@@ -597,9 +913,10 @@ fun AdvancedFilterDialog(
                     OutlinedButton(
                         onClick = onReset,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark)
                     ) {
-                        Text("Sıfırla")
+                        Text("Sıfırla", color = TextSecondary)
                     }
 
                     Button(
@@ -616,11 +933,11 @@ fun AdvancedFilterDialog(
                             )
                             onApply(newFilters)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
                         modifier = Modifier.weight(1.5f),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Filtreleri Uygula")
+                        Text("Filtreleri Uygula", color = BackgroundDark, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -638,332 +955,42 @@ fun FilterDropdownSelector(
     var expanded by remember { mutableStateOf(false) }
 
     Column {
-        Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NavyDark)
-        Spacer(modifier = Modifier.height(6.dp))
+        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+        Spacer(modifier = Modifier.height(4.dp))
         Box {
             OutlinedButton(
                 onClick = { expanded = true },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceDark)
             ) {
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(selected, fontSize = 13.sp, maxLines = 1)
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                    Text(selected, fontSize = 13.sp, color = TextPrimary, maxLines = 1)
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = TextSecondary)
                 }
             }
 
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
-                modifier = Modifier.fillMaxWidth(0.75f)
+                modifier = Modifier
+                    .fillMaxWidth(0.75f)
+                    .background(CardSurfaceElevated)
             ) {
                 options.forEach { opt ->
                     DropdownMenuItem(
-                        text = { Text(opt, fontSize = 13.sp) },
+                        text = { Text(opt, fontSize = 13.sp, color = TextPrimary) },
                         onClick = {
                             onSelect(opt)
                             expanded = false
                         }
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun AssetListCard(
-    asset: Asset,
-    canEdit: Boolean,
-    onClick: () -> Unit,
-    onQrClick: () -> Unit,
-    onAssignClick: () -> Unit
-) {
-    val statusEnum = remember(asset.status) { AssetStatus.fromString(asset.status) }
-    val conditionEnum = remember(asset.condition) { AssetCondition.fromString(asset.condition) }
-
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            // Top Row: Code, Name, Status Badge
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Surface(
-                        color = TurquoiseLight.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = when (asset.category) {
-                                    "Dizüstü Bilgisayar", "Masaüstü Bilgisayar" -> Icons.Default.Computer
-                                    "Monitör" -> Icons.Default.Tv
-                                    "Yazıcı" -> Icons.Default.Print
-                                    "Ağ Ekipmanı" -> Icons.Default.Router
-                                    "Mobilya" -> Icons.Default.Chair
-                                    "Telefon", "Tablet" -> Icons.Default.Smartphone
-                                    else -> Icons.Default.Inventory2
-                                },
-                                contentDescription = null,
-                                tint = TurquoiseDark,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = asset.assetCode,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TurquoiseDark
-                            )
-                            if (asset.serialNumber.isNotBlank()) {
-                                Text(
-                                    text = " • SN: ${asset.serialNumber}",
-                                    fontSize = 11.sp,
-                                    color = TextMutedLight
-                                )
-                            }
-                        }
-                        Text(
-                            text = asset.assetName,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = NavyDark,
-                            maxLines = 1
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-                StatusBadge(status = statusEnum)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Sub info: Category, Brand/Model, Condition
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "${asset.category} • ${asset.brand} ${asset.model}".trim().removePrefix("•"),
-                    fontSize = 12.sp,
-                    color = TextSecondaryLight,
-                    maxLines = 1
-                )
-                ConditionBadge(condition = conditionEnum)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = NeutralCardBorder.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Bottom row: Department / Assigned person / Location & Action icons
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Place,
-                            contentDescription = null,
-                            modifier = Modifier.size(13.dp),
-                            tint = TextMutedLight
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = "${asset.department} • ${asset.building} ${asset.room}",
-                            fontSize = 11.sp,
-                            color = TextSecondaryLight,
-                            maxLines = 1
-                        )
-                    }
-
-                    if (asset.assignedUserName.isNotBlank()) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = null,
-                                modifier = Modifier.size(13.dp),
-                                tint = StatusAssigned
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(
-                                text = "Zimmetli: ${asset.assignedUserName}",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = StatusAssigned,
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = onQrClick,
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.QrCode,
-                            contentDescription = "QR Kod",
-                            tint = NavyDark,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    if (canEdit && statusEnum == AssetStatus.AVAILABLE) {
-                        IconButton(
-                            onClick = onAssignClick,
-                            modifier = Modifier.size(34.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.AssignmentInd,
-                                contentDescription = "Zimmetle",
-                                tint = StatusAssigned,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = onClick,
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            contentDescription = "Detay",
-                            tint = TextMutedLight,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AssetGridCard(
-    asset: Asset,
-    onClick: () -> Unit,
-    onQrClick: () -> Unit
-) {
-    val statusEnum = remember(asset.status) { AssetStatus.fromString(asset.status) }
-
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Surface(
-                    color = TurquoiseLight.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = when (asset.category) {
-                                "Dizüstü Bilgisayar", "Masaüstü Bilgisayar" -> Icons.Default.Computer
-                                "Monitör" -> Icons.Default.Tv
-                                "Yazıcı" -> Icons.Default.Print
-                                "Ağ Ekipmanı" -> Icons.Default.Router
-                                "Mobilya" -> Icons.Default.Chair
-                                else -> Icons.Default.Inventory2
-                            },
-                            contentDescription = null,
-                            tint = TurquoiseDark,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                IconButton(
-                    onClick = onQrClick,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        Icons.Default.QrCode,
-                        contentDescription = "QR Kod",
-                        tint = NavyDark,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = asset.assetCode,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TurquoiseDark
-            )
-
-            Text(
-                text = asset.assetName,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = NavyDark,
-                maxLines = 2
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "${asset.brand} ${asset.model}".trim(),
-                fontSize = 11.sp,
-                color = TextSecondaryLight,
-                maxLines = 1
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            StatusBadge(status = statusEnum)
-
-            if (asset.assignedUserName.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = asset.assignedUserName,
-                    fontSize = 10.sp,
-                    color = StatusAssigned,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1
-                )
             }
         }
     }

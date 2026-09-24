@@ -40,12 +40,13 @@ fun StatusBadge(status: AssetStatus, modifier: Modifier = Modifier) {
 
     Surface(
         color = bgColor,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(6.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, textColor.copy(alpha = 0.3f)),
         modifier = modifier
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -57,7 +58,7 @@ fun StatusBadge(status: AssetStatus, modifier: Modifier = Modifier) {
             Text(
                 text = status.labelTr,
                 color = textColor,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -67,11 +68,11 @@ fun StatusBadge(status: AssetStatus, modifier: Modifier = Modifier) {
 @Composable
 fun ConditionBadge(condition: AssetCondition, modifier: Modifier = Modifier) {
     val color = when (condition) {
-        AssetCondition.EXCELLENT -> Color(0xFF059669)
-        AssetCondition.GOOD -> Color(0xFF2563EB)
-        AssetCondition.FAIR -> Color(0xFFD97706)
-        AssetCondition.POOR -> Color(0xFFDC2626)
-        AssetCondition.DAMAGED -> Color(0xFF7F1D1D)
+        AssetCondition.EXCELLENT -> Color(0xFF10B981)
+        AssetCondition.GOOD -> Color(0xFF38BDF8)
+        AssetCondition.FAIR -> Color(0xFFF59E0B)
+        AssetCondition.POOR -> Color(0xFFEF4444)
+        AssetCondition.DAMAGED -> Color(0xFFDC2626)
     }
 
     Text(
@@ -80,7 +81,8 @@ fun ConditionBadge(condition: AssetCondition, modifier: Modifier = Modifier) {
         fontSize = 11.sp,
         fontWeight = FontWeight.Medium,
         modifier = modifier
-            .background(color.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+            .background(color.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+            .border(1.dp, color.copy(alpha = 0.25f), RoundedCornerShape(4.dp))
             .padding(horizontal = 6.dp, vertical = 2.dp)
     )
 }
@@ -98,14 +100,14 @@ fun QrCodeDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier.padding(20.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -115,21 +117,20 @@ fun QrCodeDialog(
                     Text(
                         text = "Demirbaş QR Kodu",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        fontSize = 17.sp,
+                        color = TextPrimary
                     )
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Kapat")
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Kapat", tint = TextPrimary)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Box(
                     modifier = Modifier
-                        .size(220.dp)
+                        .size(200.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .border(1.dp, NeutralCardBorder, RoundedCornerShape(12.dp))
                         .background(Color.White)
                         .padding(12.dp),
                     contentAlignment = Alignment.Center
@@ -141,23 +142,23 @@ fun QrCodeDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
                     text = asset.assetCode,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = TurquoiseDark
+                    style = CodeTextStyle,
+                    fontSize = 16.sp
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = asset.assetName,
-                    fontSize = 14.sp,
-                    color = TextSecondaryLight,
+                    fontSize = 13.sp,
+                    color = TextSecondary,
                     textAlign = TextAlign.Center,
                     maxLines = 2
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -171,11 +172,13 @@ fun QrCodeDialog(
                                 "AKYOL INVENTORY\nDemirbaş Kodu: ${asset.assetCode}\nAdı: ${asset.assetName}\nBölüm: ${asset.department}\nDurum: ${asset.getStatusEnum().labelTr}"
                             )
                         },
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderLight),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Share, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Paylaş", fontSize = 13.sp)
+                        Text("Paylaş", fontSize = 13.sp, color = TextPrimary)
                     }
 
                     Button(
@@ -183,12 +186,13 @@ fun QrCodeDialog(
                             onDismiss()
                             onPrintLabel()
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = NavyDark),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+                        shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Print, contentDescription = null, tint = BackgroundDark, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Etiket Yazdır", fontSize = 13.sp)
+                        Text("Etiket", fontSize = 13.sp, color = BackgroundDark, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -206,7 +210,8 @@ fun PrintLabelDialog(asset: Asset, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
             Column(
@@ -216,7 +221,8 @@ fun PrintLabelDialog(asset: Asset, onDismiss: () -> Unit) {
                 Text(
                     text = "Demirbaş Barkod / Etiket Önizleme",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontSize = 16.sp,
+                    color = TextPrimary
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -245,7 +251,7 @@ fun PrintLabelDialog(asset: Asset, onDismiss: () -> Unit) {
                                 text = "AKYOL INVENTORY",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Black,
-                                color = NavyDark,
+                                color = Color(0xFF101923),
                                 letterSpacing = 1.sp
                             )
                             Text(
@@ -276,7 +282,7 @@ fun PrintLabelDialog(asset: Asset, onDismiss: () -> Unit) {
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Kapat")
+                        Text("Kapat", color = TextSecondary)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -288,11 +294,12 @@ fun PrintLabelDialog(asset: Asset, onDismiss: () -> Unit) {
                             )
                             onDismiss()
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark)
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Print, contentDescription = null, tint = BackgroundDark, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Yazıcıya Gönder")
+                        Text("Yazdır", color = BackgroundDark, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -315,33 +322,36 @@ fun ZimmetleDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
                     text = "Demirbaş Zimmetle",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontSize = 17.sp,
+                    color = TextPrimary
                 )
                 Text(
                     text = "${asset.assetCode} - ${asset.assetName}",
                     fontSize = 13.sp,
-                    color = TextSecondaryLight
+                    color = TextSecondary
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                Text("Zimmetlenecek Personel Seçin:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.height(6.dp))
+                Text("Zimmetlenecek Personel Seçin:", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                Spacer(modifier = Modifier.height(4.dp))
 
                 var expanded by remember { mutableStateOf(false) }
                 Box {
                     OutlinedButton(
                         onClick = { expanded = true },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = SurfaceDark)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -350,19 +360,21 @@ fun ZimmetleDialog(
                         ) {
                             Text(
                                 text = selectedEmp?.let { "${it.fullName} (${it.department})" } ?: "Personel Seçin",
-                                fontSize = 13.sp
+                                fontSize = 13.sp,
+                                color = TextPrimary
                             )
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = TextSecondary)
                         }
                     }
 
                     DropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.background(CardSurfaceElevated)
                     ) {
                         employees.forEach { emp ->
                             DropdownMenuItem(
-                                text = { Text("${emp.fullName} - ${emp.department} (${emp.title})") },
+                                text = { Text("${emp.fullName} - ${emp.department} (${emp.title})", color = TextPrimary) },
                                 onClick = {
                                     selectedEmp = emp
                                     expanded = false
@@ -377,7 +389,15 @@ fun ZimmetleDialog(
                 OutlinedTextField(
                     value = returnDate,
                     onValueChange = { returnDate = it },
-                    label = { Text("Tahmini İade Tarihi") },
+                    label = { Text("Tahmini İade Tarihi", color = TextSecondary) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AccentTeal,
+                        unfocusedBorderColor = BorderDark,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedContainerColor = SurfaceDark,
+                        unfocusedContainerColor = SurfaceDark
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp)
                 )
@@ -387,7 +407,15 @@ fun ZimmetleDialog(
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Zimmet Notu") },
+                    label = { Text("Zimmet Notu", color = TextSecondary) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AccentTeal,
+                        unfocusedBorderColor = BorderDark,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedContainerColor = SurfaceDark,
+                        unfocusedContainerColor = SurfaceDark
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
                     minLines = 2
@@ -401,9 +429,10 @@ fun ZimmetleDialog(
                 ) {
                     Checkbox(
                         checked = signatureConfirmed,
-                        onCheckedChange = { signatureConfirmed = it }
+                        onCheckedChange = { signatureConfirmed = it },
+                        colors = CheckboxDefaults.colors(checkedColor = AccentTeal)
                     )
-                    Text("Dijital Zimmet Tutanağı ve Personel Onayı Alındı", fontSize = 12.sp)
+                    Text("Dijital Zimmet Tutanağı ve Personel Onayı Alındı", fontSize = 12.sp, color = TextPrimary)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -412,16 +441,17 @@ fun ZimmetleDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) { Text("İptal") }
+                    TextButton(onClick = onDismiss) { Text("İptal", color = TextSecondary) }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
                             selectedEmp?.let { onConfirm(it, returnDate, notes) }
                         },
                         enabled = selectedEmp != null && signatureConfirmed,
-                        colors = ButtonDefaults.buttonColors(containerColor = StatusAssigned)
+                        colors = ButtonDefaults.buttonColors(containerColor = StatusAssigned),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Zimmetle")
+                        Text("Zimmetle", color = BackgroundDark, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -439,15 +469,27 @@ fun ZimmettenDusDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Zimmetten Düş") },
+        title = { Text("Zimmetten Düş", color = TextPrimary, fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                Text("${asset.assetCode} kodlu demirbaş ${asset.assignedUserName} üzerinden iade alınıp BOŞTA durumuna getirilecek.")
+                Text(
+                    "${asset.assetCode} kodlu demirbaş ${asset.assignedUserName} üzerinden iade alınıp BOŞTA durumuna getirilecektir.",
+                    color = TextSecondary,
+                    fontSize = 13.sp
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = returnNotes,
                     onValueChange = { returnNotes = it },
-                    label = { Text("İade / Kontrol Notu") },
+                    label = { Text("İade / Kontrol Notu", color = TextSecondary) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AccentTeal,
+                        unfocusedBorderColor = BorderDark,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedContainerColor = SurfaceDark,
+                        unfocusedContainerColor = SurfaceDark
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -457,11 +499,13 @@ fun ZimmettenDusDialog(
                 onClick = { onConfirm(returnNotes) },
                 colors = ButtonDefaults.buttonColors(containerColor = StatusAvailable)
             ) {
-                Text("Onayla ve Boşa Çıkar")
+                Text("Onayla ve Boşa Çıkar", color = BackgroundDark, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Vazgeç") }
-        }
+            TextButton(onClick = onDismiss) { Text("Vazgeç", color = TextSecondary) }
+        },
+        containerColor = CardSurfaceDark,
+        shape = RoundedCornerShape(16.dp)
     )
 }

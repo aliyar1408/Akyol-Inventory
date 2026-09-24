@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,30 +33,40 @@ fun ProfileSettingsScreen(viewModel: InventoryViewModel) {
     val assets by viewModel.allAssets.collectAsState()
 
     var showRoleDialog by remember { mutableStateOf(false) }
-    var showImportDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(BackgroundDark)
     ) {
         // App Bar
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .background(SurfaceDark)
+                .padding(horizontal = 8.dp, vertical = 10.dp)
         ) {
-            IconButton(onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
+            IconButton(
+                onClick = { viewModel.navigateTo(AppScreen.DASHBOARD) },
+                modifier = Modifier.size(44.dp)
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Geri", tint = TextPrimary)
             }
-            Text(
-                text = "Profil & Sistem Ayarları",
-                fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
-                color = NavyDark
-            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Column {
+                Text(
+                    text = "Profil ve Sistem Ayarları",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "Kullanıcı rolü ve uygulama konfigürasyonu",
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+            }
         }
 
         LazyColumn(
@@ -67,7 +78,8 @@ fun ProfileSettingsScreen(viewModel: InventoryViewModel) {
             item {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = NavyDark),
+                    colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
@@ -76,14 +88,15 @@ fun ProfileSettingsScreen(viewModel: InventoryViewModel) {
                                 modifier = Modifier
                                     .size(54.dp)
                                     .clip(CircleShape)
-                                    .background(TurquoisePrimary),
+                                    .background(CardSurfaceElevated)
+                                    .border(1.dp, BorderLight, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = "AA",
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Bold,
                                     fontSize = 20.sp,
-                                    color = NavyDark
+                                    color = AccentTeal
                                 )
                             }
 
@@ -92,133 +105,87 @@ fun ProfileSettingsScreen(viewModel: InventoryViewModel) {
                             Column {
                                 Text(
                                     text = "Aliyar Akyol",
-                                    fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    fontSize = 18.sp,
+                                    color = TextPrimary
                                 )
                                 Text(
                                     text = "aliyar.akyol@gmail.com",
-                                    fontSize = 12.sp,
-                                    color = TurquoiseLight
+                                    fontSize = 13.sp,
+                                    color = TextSecondary
                                 )
-                                Text(
-                                    text = "AKYOL INVENTORY Yönetici Portalı",
-                                    fontSize = 11.sp,
-                                    color = TextMutedDark
-                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Surface(
+                                    color = SurfaceDark,
+                                    shape = RoundedCornerShape(6.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderLight)
+                                ) {
+                                    Text(
+                                        text = currentRole.labelTr,
+                                        color = AccentTealLight,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
                         }
 
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(color = BorderDark)
                         Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = NavySurface)
+
+                        Text(
+                            text = currentRole.description,
+                            fontSize = 12.sp,
+                            color = TextSecondary
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
+                        OutlinedButton(
+                            onClick = { showRoleDialog = true },
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderLight),
+                            modifier = Modifier.fillMaxWidth().height(44.dp)
                         ) {
-                            Column {
-                                Text("Mevcut Kullanıcı Rolü", fontSize = 11.sp, color = TextMutedDark)
-                                Text(currentRole.labelTr, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = BrightBlue)
-                            }
-
-                            Button(
-                                onClick = { showRoleDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text("Rolü Değiştir", fontSize = 11.sp)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Notification / Alerts Summary Card
-            item {
-                Card(
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = WarningAmber, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = AccentTeal, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Sistem Bildirimleri ve Uyarılar", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Kullanıcı Rolünü Değiştir (RBAC)", color = TextPrimary)
                         }
-
-                        AlertRowItem(
-                            icon = Icons.Default.Warning,
-                            iconColor = WarningAmber,
-                            title = "Garanti Bitiş Yaklaşan",
-                            desc = "3 demirbaşın garantisi önümüzdeki 60 gün içinde sona erecek."
-                        )
-                        AlertRowItem(
-                            icon = Icons.Default.Build,
-                            iconColor = StatusMaintenance,
-                            title = "Planlı Bakım Vakti",
-                            desc = "Daikin Klima ve HP Lazer Yazıcı periyodik bakım bekliyor."
-                        )
-                        AlertRowItem(
-                            icon = Icons.Default.AssignmentLate,
-                            iconColor = StatusFaulty,
-                            title = "Geciken Zimmet İadeleri",
-                            desc = "Tüm personeller güncel iade takvimine uygun durumdadır."
-                        )
                     }
                 }
             }
 
-            // Module Navigation Shortcuts
+            // Fast Navigation Shortcuts
             item {
                 Card(
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Yönetim Modülleri", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Spacer(modifier = Modifier.height(10.dp))
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Yönetim Modülleri", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextPrimary)
 
-                        SettingMenuItem(
+                        SettingsMenuRow(
+                            title = "Personel Listesi ve Zimmetler",
+                            subtitle = "Tüm çalışanları ve üzerlerindeki demirbaşları görüntüleyin",
                             icon = Icons.Default.People,
-                            title = "Personel (Zimmet Dağılımı)",
-                            desc = "Çalışan listesi ve zimmetli demirbaşları yönet",
                             onClick = { viewModel.navigateTo(AppScreen.EMPLOYEES) }
                         )
 
-                        SettingMenuItem(
-                            icon = Icons.Default.BarChart,
-                            title = "Raporlama & Analitik",
-                            desc = "10 farklı kurumsal rapor türü ve veri analizi",
+                        SettingsMenuRow(
+                            title = "Kurumsal Raporlar & Dışa Aktarım",
+                            subtitle = "Excel (.xlsx) ve PDF formatlarında envanter raporları alın",
+                            icon = Icons.Default.Assessment,
                             onClick = { viewModel.navigateTo(AppScreen.REPORTS) }
                         )
 
-                        SettingMenuItem(
+                        SettingsMenuRow(
+                            title = "Yıllık Sayım ve Denetim Modu",
+                            subtitle = "Depo ve oda bazlı hızlı QR sayımı gerçekleştirin",
                             icon = Icons.Default.FactCheck,
-                            title = "Sayım & Saha Denetimi",
-                            desc = "2026 Yıllık sayım oturumu ve QR kontrolü",
                             onClick = { viewModel.navigateTo(AppScreen.AUDIT) }
-                        )
-
-                        SettingMenuItem(
-                            icon = Icons.Default.CloudUpload,
-                            title = "Excel'den Toplu İçe Aktar",
-                            desc = "Şablon ile toplu demirbaş yükleme ve doğrulama",
-                            onClick = { showImportDialog = true }
-                        )
-
-                        SettingMenuItem(
-                            icon = Icons.Default.Download,
-                            title = "Tüm Veriyi Dışa Aktar (CSV / Excel)",
-                            desc = "Tüm aktif demirbaş verisini indir",
-                            onClick = {
-                                val csv = ExportUtil.generateAssetCsv(assets)
-                                ExportUtil.shareText(context, "AKYOL_Tum_Demirbaslar.csv", csv)
-                            }
                         )
                     }
                 }
@@ -227,16 +194,19 @@ fun ProfileSettingsScreen(viewModel: InventoryViewModel) {
             // System Information Card
             item {
                 Card(
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, NeutralCardBorder)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardSurfaceDark),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BorderDark),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Sistem Bilgileri", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = NavyDark)
-                        Text("Uygulama: AKYOL INVENTORY v1.0 Enterprise", fontSize = 11.sp, color = TextSecondaryLight)
-                        Text("Mimari: Room Database Local Persistence + Gemini Multimodal AI", fontSize = 11.sp, color = TextSecondaryLight)
-                        Text("Kayıtlı Demirbaş Sayısı: ${assets.size}", fontSize = 11.sp, color = TextSecondaryLight)
-                        Text("Barkod & Karekod Standardı: ISO/IEC 18004 ZXing 2D Matrix", fontSize = 11.sp, color = TextSecondaryLight)
+                        Text("Sistem Bilgileri", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextPrimary)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text("Uygulama: AKYOL INVENTORY v1.0.1 Enterprise", fontSize = 12.sp, color = TextSecondary)
+                        Text("Mimari: Room Database Local Persistence + Gemini Multimodal AI", fontSize = 12.sp, color = TextSecondary)
+                        Text("Kayıtlı Demirbaş Sayısı: ${assets.size} adet", fontSize = 12.sp, color = TextSecondary)
+                        Text("Rapor Motoru: Pure-Kotlin ECMA-376 OpenXML (.xlsx) + Android Native PDF", fontSize = 12.sp, color = TextSecondary)
+                        Text("Barkod & Karekod Standardı: ISO/IEC 18004 ZXing 2D Matrix", fontSize = 12.sp, color = TextSecondary)
                     }
                 }
             }
@@ -251,102 +221,54 @@ fun ProfileSettingsScreen(viewModel: InventoryViewModel) {
     if (showRoleDialog) {
         AlertDialog(
             onDismissRequest = { showRoleDialog = false },
-            title = { Text("Kullanıcı Rolü Seçin") },
+            title = { Text("Kullanıcı Rolü Seçin (RBAC)", color = TextPrimary, fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     UserRole.entries.forEach { role ->
-                        Surface(
-                            color = if (currentRole == role) TurquoiseDark.copy(alpha = 0.15f) else Color.Transparent,
-                            shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (currentRole == role) TurquoiseDark else NeutralCardBorder
-                            ),
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     viewModel.setRole(role)
                                     showRoleDialog = false
                                 }
-                                .padding(10.dp)
+                                .padding(vertical = 6.dp)
                         ) {
+                            RadioButton(
+                                selected = currentRole == role,
+                                onClick = {
+                                    viewModel.setRole(role)
+                                    showRoleDialog = false
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = AccentTeal)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Column {
-                                Text(role.labelTr, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (currentRole == role) TurquoiseDark else Color.Black)
-                                Text(role.description, fontSize = 11.sp, color = TextSecondaryLight)
+                                Text(role.labelTr, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextPrimary)
+                                Text(role.description, fontSize = 11.sp, color = TextSecondary)
                             }
                         }
                     }
                 }
             },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showRoleDialog = false }) { Text("Kapat") }
-            }
-        )
-    }
-
-    // Excel Import Dialog (Validating Başarılı, Uyarılı, Hatalı)
-    if (showImportDialog) {
-        AlertDialog(
-            onDismissRequest = { showImportDialog = false },
-            title = { Text("Excel'den İçe Aktarım") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Excel şablonu incelendi ve doğrulandı:")
-                    Surface(color = StatusAvailable.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp), modifier = Modifier.fillMaxWidth().padding(4.dp)) {
-                        Text("✔ Başarılı Kayıt: 2 Adet (Hatasız ve eksiksiz)", color = StatusAvailable, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(6.dp))
-                    }
-                    Surface(color = WarningAmber.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp), modifier = Modifier.fillMaxWidth().padding(4.dp)) {
-                        Text("⚠ Uyarılı Kayıt: 0 Adet", color = WarningAmber, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(6.dp))
-                    }
-                    Surface(color = StatusFaulty.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp), modifier = Modifier.fillMaxWidth().padding(4.dp)) {
-                        Text("✖ Hatalı Kayıt: 0 Adet", color = StatusFaulty, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(6.dp))
-                    }
-                    Text("İçe aktarmak istediğiniz 2 yeni demirbaş sisteme eklensin mi?", fontSize = 12.sp)
-                }
-            },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.importDemoBulkAssets()
-                        showImportDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = TurquoiseDark)
-                ) {
-                    Text("Verileri İçe Aktar")
+                TextButton(onClick = { showRoleDialog = false }) {
+                    Text("Kapat", color = AccentTeal)
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showImportDialog = false }) { Text("Vazgeç") }
-            }
+            containerColor = CardSurfaceDark,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 }
 
 @Composable
-fun AlertRowItem(icon: androidx.compose.ui.graphics.vector.ImageVector, iconColor: Color, title: String, desc: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(iconColor.copy(alpha = 0.08f))
-            .padding(10.dp)
-    ) {
-        Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(10.dp))
-        Column {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = iconColor)
-            Text(desc, fontSize = 11.sp, color = TextSecondaryLight)
-        }
-    }
-}
-
-@Composable
-fun SettingMenuItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun SettingsMenuRow(
     title: String,
-    desc: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
 ) {
     Row(
@@ -354,26 +276,26 @@ fun SettingMenuItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 10.dp)
+            .padding(vertical = 10.dp, horizontal = 6.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(CircleShape)
-                    .background(TurquoiseDark.copy(alpha = 0.1f)),
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(SurfaceDark),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = TurquoiseDark, modifier = Modifier.size(18.dp))
+                Icon(icon, contentDescription = null, tint = AccentTeal, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                Text(desc, fontSize = 11.sp, color = TextSecondaryLight)
+                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = TextPrimary)
+                Text(subtitle, fontSize = 11.sp, color = TextSecondary, maxLines = 1)
             }
         }
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMutedLight, modifier = Modifier.size(18.dp))
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
     }
-    HorizontalDivider(color = NeutralCardBorder.copy(alpha = 0.5f))
 }
