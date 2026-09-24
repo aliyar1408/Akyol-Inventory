@@ -1,0 +1,6 @@
+{
+  "name": "AKYOL INVENTORY",
+  "description": "AI Destekli Kurumsal Demirbaş ve Envanter Yönetim Sistemi (Zimmet, Bakım, QR/Barkod, Sayım ve Raporlama)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

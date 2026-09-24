@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for Authentication & RBAC
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Role extraction from custom claims or fallback user document
+    function getUserRole() {
+      return request.auth.token.role != null 
+        ? request.auth.token.role 
+        : get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (getUserRole() == 'ADMIN' || request.auth.token.admin == true);
+    }
+
+    function isManager() {
+      return isSignedIn() && (isAdmin() || getUserRole() == 'MANAGER');
+    }
+
+    function isStaff() {
+      return isSignedIn() && (isManager() || getUserRole() == 'STAFF');
+    }
+
+    function isViewer() {
+      return isSignedIn() && (isStaff() || getUserRole() == 'VIEWER');
+    }
+
+    // Check if an asset is assigned to the authenticated user
+    function isAssignedToCurrentStaff(assetData) {
+      return isSignedIn() && (
+        assetData.assignedUserId == request.auth.uid || 
+        assetData.assignedUserId == request.auth.token.employeeNumber
+      );
+    }
+
+    // ----------------------------------------------------
+    // ASSETS COLLECTION (/assets/{assetCode})
+    // ----------------------------------------------------
+    match /assets/{assetCode} {
+      // ADMIN, MANAGER, VIEWER can read all assets
+      // STAFF can read assigned assets or any department assets for lookup
+      allow read: if isViewer() || (isStaff() && (isAssignedToCurrentStaff(resource.data) || resource.data.department == request.auth.token.department));
+      
+      // Only ADMIN and MANAGER can create or update assets
+      allow create, update: if isManager();
+      
+      // Only ADMIN can permanently delete assets
+      allow delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------
+    // ASSIGNMENT HISTORY (/assignment_history/{assignmentId})
+    // ----------------------------------------------------
+    match /assignment_history/{assignmentId} {
+      allow read: if isViewer();
+      // Only ADMIN and MANAGER can perform assignments and returns
+      allow create: if isManager();
+      // Assignment logs are immutable, updates and deletes disallowed
+      allow update, delete: if false;
+    }
+
+    // ----------------------------------------------------
+    // MAINTENANCE RECORDS (/maintenance_records/{recordId})
+    // ----------------------------------------------------
+    match /maintenance_records/{recordId} {
+      allow read: if isViewer();
+      // Only ADMIN and MANAGER can schedule and record maintenance
+      allow create, update: if isManager();
+      allow delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------
+    // AUDIT ITEMS & SCANS (/audit_items/{itemId})
+    // ----------------------------------------------------
+    match /audit_items/{itemId} {
+      allow read: if isViewer();
+      // STAFF, MANAGER, and ADMIN can submit scan entries during inventory audit
+      allow create: if isStaff();
+      allow update, delete: if isManager();
+    }
+
+    // ----------------------------------------------------
+    // ACTIVITY LOGS (/activity_logs/{logId})
+    // ----------------------------------------------------
+    match /activity_logs/{logId} {
+      allow read: if isViewer();
+      // System and users record audit trail
+      allow create: if isSignedIn();
+      // Activity logs are strictly immutable
+      allow update, delete: if false;
+    }
+
+    // ----------------------------------------------------
+    // EMPLOYEES (/employees/{employeeId})
+    // ----------------------------------------------------
+    match /employees/{employeeId} {
+      allow read: if isViewer();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ----------------------------------------------------
+    // USER ROLES & PROFILES (/users/{userId})
+    // ----------------------------------------------------
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isManager());
+      // Only ADMIN can promote, demote, or change user roles
+      allow write: if isAdmin();
+    }
+  }
+}

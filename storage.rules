@@ -1,0 +1,35 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return request.auth.token.role != null ? request.auth.token.role : 'VIEWER';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (getUserRole() == 'ADMIN' || request.auth.token.admin == true);
+    }
+
+    function isManager() {
+      return isSignedIn() && (isAdmin() || getUserRole() == 'MANAGER');
+    }
+
+    // Asset Photos and Documents
+    match /assets/{assetCode}/{allPaths=**} {
+      // Any authenticated viewer can view images and documents
+      allow read: if isSignedIn();
+      
+      // Only Manager and Admin can upload photos or documents
+      allow write: if isManager() && 
+        request.resource.size < 15 * 1024 * 1024 && // 15MB limit
+        (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
+
+      // Only Admin can delete files from storage
+      allow delete: if isAdmin();
+    }
+  }
+}
